@@ -5,7 +5,7 @@ module Control.Monad.Bayes.Weighted
 
 import Control.Monad.State
 
-import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Interface
 
 Weighted : (m : Type -> Type) -> (a : Type) -> Type
 Weighted m a = StateT Double m a  -- TODO: replace Double with Log

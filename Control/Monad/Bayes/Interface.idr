@@ -6,9 +6,10 @@ import Control.Monad.RWS
 import Control.Monad.State
 import Control.Monad.Trans
 import Control.Monad.Writer
-import public Data.List
+--import public Data.List
+import System.Random
 
-import Control.Monad.Trans.Identity
+--import Control.Monad.Trans.Identity
 import public Statistics.Distribution.Uniform
 import public Statistics.Distribution.Normal
 --import Statistics.Distribution.Binomial
@@ -34,15 +35,16 @@ interface Monad m => MonadSample m where
          r2 <- random
          pure $ Normal.normal m s r1 r2
 
-  ||| B(n, p)
-  binomial : (n : Nat) -> (p : Double) -> m Nat
-  binomial n p = pure $ length $ filter (== True) !(Data.List.replicateM n $ bernoulli p)
+  --||| B(n, p)
+  --binomial : (n : Nat) -> (p : Double) -> m Nat
+  --binomial n p = pure $ length $ filter (== True) !(Data.List.replicateM n $ bernoulli p)
 
 public export
 interface Monad m => MonadCond m where
   ||| Record a likelihood
   score : Double -> m ()  -- TODO: replace with Log Double
 
+export
 condition : MonadCond m => Bool -> m ()
 condition b = score $ if b then 1 else 0
 
@@ -59,12 +61,14 @@ MonadSample IO where
 
 -- Instances that lift probabilistic effects to standard transformers
 -- IdentityT
+{-
 MonadSample m => MonadSample (IdentityT m) where
   random = lift random
   bernoulli = lift . bernoulli
 MonadCond m => MonadCond (IdentityT m) where
   score = lift . score
 MonadInfer m => MonadInfer (IdentityT m) where
+-}
 
 -- MaybeT
 MonadSample m => MonadSample (MaybeT m) where
