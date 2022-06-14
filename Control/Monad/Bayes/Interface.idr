@@ -9,9 +9,9 @@ import Control.Monad.Writer
 import public Data.List
 
 import Control.Monad.Trans.Identity
-import public Dist.Uniform
-import public Dist.Normal
---import Dist.Binomial
+import public Statistics.Distribution.Uniform
+import public Statistics.Distribution.Normal
+--import Statistics.Distribution.Binomial
 
 -- TODO: implement more distributions
 public export
