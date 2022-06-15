@@ -7,13 +7,49 @@ import Control.Monad.State
 
 import Control.Monad.Bayes.Interface
 
+||| Execute the program using the prior distribution, while accumulating likelihood.
 Weighted : (m : Type -> Type) -> (a : Type) -> Type
-Weighted m a = StateT Double m a  -- TODO: replace Double with Log
+Weighted = StateT Double  -- TODO: replace Double with Log Double
 
-Functor f => Functor (Weighted m) where
-  map f (ST g) = ?h
+MonadSample m => MonadSample (Weighted m) where
+  random = lift random
 
-x : ST
+Monad m => MonadCond (Weighted m) where
+  score w = ST $ \st => pure (w * st, ())
 
---Monad m => MonadCond (Weighted m) where
-  --score w = Weighted (modify (* w))
+MonadSample m => MonadInfer (Weighted m) where
+
+||| Obtain an explicit value of the likelihood for a given value
+runWeighted : Weighted m a -> m (Double, a)
+runWeighted = runStateT 1
+
+||| Compute the sample and discard the weight.
+||| This operation introduces bias.
+prior : Functor m => Weighted m a -> m a
+prior = map snd . runWeighted
+
+||| Compute the weight and discard the sample.
+extractWeight : Functor m => Weighted m a -> m Double
+extractWeight = map fst . runWeighted
+
+||| Embed a random variable with explicitly given likelihood
+withWeight : Monad m => m (Double, a) -> Weighted m a
+withWeight m = do
+  (w, x) <- lift m
+  get >>= (put . (w *))
+  pure x
+
+||| Combine weights from two different levels.
+flatten : Monad m => Weighted (Weighted m) a -> Weighted m a
+flatten m = withWeight $ (\(p, (q, x)) => (p * q, x)) <$> runWeighted (runWeighted m)
+
+||| Use the weight as a factor in the transformed monad.
+applyWeight : MonadCond m => Weighted m a -> m a
+applyWeight m = do
+  (w, x) <- runWeighted m
+  score w
+  pure x
+
+||| Apply a transformation to the transformed monad.
+hoist : (forall x. m x -> n x) -> Weighted m a -> Weighted n a
+hoist phi w = mapStateT phi w
