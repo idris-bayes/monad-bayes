@@ -1,3 +1,7 @@
 package idris-monad-bayes
 
 depends = contrib, free, distributions
+
+modules = Control.Monad.Bayes.Interface
+        , Control.Monad.Bayes.Free
+        , Control.Monad.Bayes.Weighted
