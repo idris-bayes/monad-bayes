@@ -66,7 +66,8 @@ withPartialRandomness' randomness k = evalStateT randomness $ iterTM f k
           k x
 
 withPartialRandomness : (Monad m, MonadWriter (List Double) m) => List Double -> FreeSampler m a -> m (List Double, a)
-withPartialRandomness randomness k = let wpr = the (WriterT (List Double) m a) (withPartialRandomness' randomness k)
+withPartialRandomness randomness k = let wpr = withPartialRandomness' randomness k
+  -- let wpr = the (WriterT (List Double) m a) (withPartialRandomness' randomness k)
   in ?rh
 
 ||| Like `withPartialRandomness`, but use an arbitrary sampling monad.
