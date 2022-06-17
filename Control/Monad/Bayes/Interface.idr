@@ -51,10 +51,6 @@ condition b = score $ if b then 1 else 0
 public export
 interface (MonadSample m, MonadCond m) => MonadInfer m where
 
-||| PDF of the Normal dist. (i.e. relative likelihood of observing x in N(m,s^2))
-normalPdf : (mean, sd, sample : Double) -> Double
-normalPdf m s x = Normal.normal_pdf (x - m) s
-
 MonadSample IO where
   random = randomIO
 
