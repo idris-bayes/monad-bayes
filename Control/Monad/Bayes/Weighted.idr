@@ -8,6 +8,7 @@ import Control.Monad.State
 import Control.Monad.Bayes.Interface
 
 ||| Execute the program using the prior distribution, while accumulating likelihood.
+public export
 Weighted : (m : Type -> Type) -> (a : Type) -> Type
 Weighted = StateT Double  -- TODO: replace Double with Log Double
 

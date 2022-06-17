@@ -10,7 +10,7 @@ SamplerIO = IO
 MonadSample SamplerIO where
   random = System.Random.randomIO
 
-||| Initialize a pseudo-random number generator using randomness supplied by the operating system. Providing the randomness ,i.e. setting the random seed, is done automatically, so this is just `id`.
+||| Initialize a pseudo-random number generator using randomness supplied by the operating system. Providing the randomness, i.e. setting the random seed, is done automatically, so this is just `id`.
 sampleIO : SamplerIO a -> IO a
 sampleIO = id
 
