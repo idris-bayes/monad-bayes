@@ -12,13 +12,16 @@ import Control.Monad.Free.Church
 import Control.Monad.Trans.Free.Church
 
 ||| Random sampling functor
+public export
 data SamF a = Random (Double -> a)
 
+public export
 Functor SamF where
   map f (Random k) = Random (f . k)
 
 ||| Free monad transformer over random sampling.
 ||| Uses the Church-encoded version of the free monad for efficiency.
+public export
 FreeSampler : (m : Type -> Type) -> (a : Type) -> Type
 FreeSampler = FT SamF
 
@@ -30,18 +33,22 @@ FreeSampler = FT SamF
 --{m : _} -> Monad m => MonadFree SamF (FreeSampler m) where
   --wrap (Random x) = MkFT $ ?a
 
+export
 (Monad m, MonadFree SamF (FreeSampler m)) => MonadSample (FreeSampler m) where
   random = MkFT (?h (Random id))
 
 ||| Hoist 'FreeSampler' through a monad transform.
+export
 hoist : {n : _} -> (Monad m, Monad n) => (forall x. m x -> n x) -> FreeSampler m a -> FreeSampler n a
 hoist f m = hoistFT f m
 
 ||| Execute random sampling in the transformed monad.
+export
 interpret : MonadSample m => FreeSampler m a -> m a
 interpret c = iterT (\(Random k) => random >>= k) c
 
 ||| Execute computation with supplied values for random choices.
+export
 withRandomness : Monad m => List Double -> FreeSampler m a -> m a
 withRandomness randomness = evalStateT randomness . iterTM f
   where f : MonadState (List Double) n => SamF (n b) -> n b

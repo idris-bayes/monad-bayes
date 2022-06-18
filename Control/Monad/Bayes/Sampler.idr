@@ -3,7 +3,7 @@ module Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Interface
 import System.Random
 
-||| An 'IO' based random sampler (Note: the `ReaderT GenIO IO` pattern isn't necessary here, as there isn't infrastructure in Idris for providing, propagating, and updating a GenIO seed though a program, as seen in the Haskell System.Random.MWC library. A lot of functions in the Haskell Bayes.Sampler module are hence redundant.)
+||| An 'IO' based random sampler (I'm not sure if the `ReaderT GenIO IO` pattern is necessary, and for what particular reason we want to use it. The purpose of that pattern is to propagate and mutably update a GenIO seed though a program -- might need to talk to Ohad about this?)
 SamplerIO : Type -> Type
 SamplerIO = IO
 
