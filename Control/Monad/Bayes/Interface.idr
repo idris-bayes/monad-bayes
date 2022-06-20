@@ -39,7 +39,7 @@ interface Monad m => MonadSample m where
 
   ||| B(n, p)
   binomial : (n : Nat) -> (p : Double) -> m Nat
-  binomial n p = (pure . length . filter (== True)) !(sequence . replicate n $ bernoulli p)
+  binomial n p = (pure . length . List.filter (== True)) !(sequence . replicate n $ bernoulli p)
 
   ||| DiscUniform(range); should return Nat from 0 to (range - 1)
   discreteUniform : (range : Nat) -> m Nat

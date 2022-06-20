@@ -1,5 +1,6 @@
 module Control.Monad.Bayes.Traced.Static
 
+import Data.Vect
 import Control.Monad.Bayes.Interface
 import Control.Monad.Bayes.Traced.Common
 import Control.Monad.Bayes.Weighted
@@ -55,12 +56,18 @@ mhStep (MkTraced m d) = MkTraced m (d >>= mhTrans m)
 
 -- | Full run of the Trace Metropolis-Hastings algorithm with a specified
 -- number of steps. Newest samples are at the head of the list.
--- mh : MonadSample m => Int -> Traced m a -> m [a]
--- mh n (Traced m d) = fmap (map output . NE.toList) (f n)
---   where
---     f k with (k <= 0)
---      _ | k <= 0    = fmap (:| []) d
---      _ | otherwise = do
---         (x :| xs) <- f (k - 1)
---         y <- mhTrans m x
---         return (y :| x : xs)
+mh : MonadSample m => (n : Nat) -> Traced m a -> m (Vect (S n) a)
+mh n (MkTraced mod d) = map (map output) (f n)
+  where
+    f : (n : Nat) -> m (Vect (S n) (Trace a))
+    f Z     = map (:: []) d
+    f (S k) = do
+          (x :: xs) <- f k
+          y <- mhTrans mod x
+          pure (y :: x :: xs)
+
+-- foo : Nat -> List Nat
+-- foo (S k) = let (x :: xs) = foo k in 1 :: x :: xs
+-- foo Z     = [1]
+
+-- prfFoo : (n : Nat) -> NonEmpty (foo n)
