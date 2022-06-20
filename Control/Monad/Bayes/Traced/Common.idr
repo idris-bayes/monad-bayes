@@ -1,5 +1,7 @@
 module Control.Monad.Bayes.Traced.Common
 
+import Numeric.Log
+
 record Trace (a : Type) where
   constructor MkTrace 
   -- | Sequence of random variables sampled during the program's execution.
@@ -7,7 +9,7 @@ record Trace (a : Type) where
   -- |
   output    : a
   -- | The probability of observing this particular sequence.
-  density   : Double      -- TODO: replace Double with Log Double
+  density   : Log Double     
 
 Functor Trace where
   map f t = { output $= f } t
@@ -29,7 +31,7 @@ Monad Trace where
 singleton : Double -> Trace Double
 singleton u = MkTrace {variables = [u], output = u, density = 1}
 
-scored : Double -- TODO: replace Double with Log Double
+scored : Log Double
       -> Trace ()
 scored w = MkTrace {variables = [], output = (), density = w}
 

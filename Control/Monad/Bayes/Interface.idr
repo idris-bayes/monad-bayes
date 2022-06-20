@@ -14,6 +14,8 @@ import public Statistics.Distribution.Uniform
 import public Statistics.Distribution.Normal
 --import Statistics.Distribution.Binomial
 
+import Numeric.Log
+
 -- TODO: implement more distributions
 public export
 interface Monad m => MonadSample m where
@@ -42,7 +44,7 @@ interface Monad m => MonadSample m where
 public export
 interface Monad m => MonadCond m where
   ||| Record a likelihood
-  score : Double -> m ()  -- TODO: replace with Log Double
+  score : Log Double -> m ()  
 
 export
 condition : MonadCond m => Bool -> m ()

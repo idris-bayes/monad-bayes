@@ -7,10 +7,12 @@ import Control.Monad.State
 
 import Control.Monad.Bayes.Interface
 
+import Numeric.Log
+
 ||| Execute the program using the prior distribution, while accumulating likelihood.
 public export
 Weighted : (m : Type -> Type) -> (a : Type) -> Type
-Weighted = StateT Double  -- TODO: replace Double with Log Double
+Weighted = StateT (Log Double)  -- TODO: replace Double with Log Double
 
 export
 MonadSample m => MonadSample (Weighted m) where
@@ -25,7 +27,7 @@ MonadSample m => MonadInfer (Weighted m) where
 
 ||| Obtain an explicit value of the likelihood for a given value
 export
-runWeighted : Weighted m a -> m (Double, a)
+runWeighted : Weighted m a -> m (Log Double, a)
 runWeighted = runStateT 1
 
 ||| Compute the sample and discard the weight.
@@ -36,12 +38,12 @@ prior = map snd . runWeighted
 
 ||| Compute the weight and discard the sample.
 export
-extractWeight : Functor m => Weighted m a -> m Double
+extractWeight : Functor m => Weighted m a -> m (Log Double)
 extractWeight = map fst . runWeighted
 
 ||| Embed a random variable with explicitly given likelihood
 export
-withWeight : Monad m => m (Double, a) -> Weighted m a
+withWeight : Monad m => m (Log Double, a) -> Weighted m a
 withWeight m = do
   (w, x) <- lift m
   get >>= (put . (w *))

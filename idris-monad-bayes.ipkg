@@ -1,6 +1,6 @@
 package idris-monad-bayes
 
-depends = contrib, free, distributions
+depends = contrib, free, distributions, log-domain
 
 modules = Control.Monad.Bayes.Interface
         , Control.Monad.Bayes.Free
