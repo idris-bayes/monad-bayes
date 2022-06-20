@@ -41,6 +41,12 @@ interface Monad m => MonadSample m where
   binomial : (n : Nat) -> (p : Double) -> m Nat
   binomial n p = (pure . length . filter (== True)) !(sequence . replicate n $ bernoulli p)
 
+  ||| DiscUniform(range); should return Nat from 0 to (range - 1)
+  discreteUniform : (range : Nat) -> m Nat
+  discreteUniform range = do
+        r <- random
+        pure $ cast (floor (cast range * r))
+
 public export
 interface Monad m => MonadCond m where
   ||| Record a likelihood

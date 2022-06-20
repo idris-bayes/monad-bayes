@@ -72,6 +72,7 @@ withPartialRandomness' randomness k = evalStateT randomness $ iterTM f k
           tell [x]
           k x
 
+export
 withPartialRandomness : (Monad m, MonadWriter (List Double) m) => List Double -> FreeSampler m a -> m (List Double, a)
 withPartialRandomness randomness k = let wpr = withPartialRandomness' randomness k
   -- let wpr = the (WriterT (List Double) m a) (withPartialRandomness' randomness k)
