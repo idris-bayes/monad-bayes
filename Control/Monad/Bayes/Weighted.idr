@@ -3,18 +3,18 @@
 
 module Control.Monad.Bayes.Weighted
 
-import Control.Monad.State
+import public Control.Monad.State
 
 import Control.Monad.Bayes.Interface
 
-import Numeric.Log
+import public Numeric.Log
 
 ||| Execute the program using the prior distribution, while accumulating likelihood.
 public export
 Weighted : (m : Type -> Type) -> (a : Type) -> Type
 Weighted = StateT (Log Double)  -- TODO: replace Double with Log Double
 
-export
+public export
 MonadSample m => MonadSample (Weighted m) where
   random = lift random
 

@@ -6,6 +6,7 @@ import Control.Monad.Bayes.Interface
 import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Free
 
+||| Collection of random variables sampled during the program's execution.
 public export
 record Trace (a : Type) where
   constructor MkTrace 

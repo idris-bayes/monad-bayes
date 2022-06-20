@@ -35,7 +35,7 @@ FreeSampler = FT SamF
 
 export
 (Monad m, MonadFree SamF (FreeSampler m)) => MonadSample (FreeSampler m) where
-  random = MkFT (?h (Random id))
+  random = liftF $ Random id
 
 ||| Hoist 'FreeSampler' through a monad transform.
 export
