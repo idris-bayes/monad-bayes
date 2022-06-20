@@ -8,7 +8,7 @@ import Control.Monad.Bayes.Free
 import Control.Monad.Free
 
 ||| A tracing monad where only a subset of random choices are traced.
--- The random choices that are not to be traced should be lifted from the transformed monad.
+||| The random choices that are not to be traced should be lifted from the transformed monad.
 record Traced (m : Type -> Type) (a : Type) where 
   constructor MkTraced
   model     : Weighted (FreeSampler m) a
@@ -46,16 +46,16 @@ MonadInfer m => MonadInfer (Traced m) where
 hoistT : (forall x. m x -> m x) -> Traced m a -> Traced m a
 hoistT f (MkTraced m d) = MkTraced m (f d)
 
--- | Discard the trace and supporting infrastructure.
+||| Discard the trace and supporting infrastructure.
 marginal : Monad m => Traced m a -> m a
 marginal (MkTraced _ d) = map output d
 
--- | A single step of the Trace Metropolis-Hastings algorithm.
+||| A single step of the Trace Metropolis-Hastings algorithm.
 mhStep : MonadSample m => Traced m a -> Traced m a
 mhStep (MkTraced m d) = MkTraced m (d >>= mhTrans m)
 
--- | Full run of the Trace Metropolis-Hastings algorithm with a specified
--- number of steps. Newest samples are at the head of the list.
+||| Full run of the Trace Metropolis-Hastings algorithm with a specified
+||| number of steps. Newest samples are at the head of the list.
 mh : MonadSample m => (n : Nat) -> Traced m a -> m (Vect (S n) a)
 mh n (MkTraced mod d) = map (map output) (f n)
   where
@@ -65,9 +65,3 @@ mh n (MkTraced mod d) = map (map output) (f n)
           (x :: xs) <- f k
           y <- mhTrans mod x
           pure (y :: x :: xs)
-
--- foo : Nat -> List Nat
--- foo (S k) = let (x :: xs) = foo k in 1 :: x :: xs
--- foo Z     = [1]
-
--- prfFoo : (n : Nat) -> NonEmpty (foo n)
