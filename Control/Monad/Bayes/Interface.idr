@@ -6,7 +6,7 @@ import Control.Monad.RWS
 import Control.Monad.State
 import Control.Monad.Trans
 import Control.Monad.Writer
---import public Data.List
+import public Data.List
 import System.Random
 
 --import Control.Monad.Trans.Identity
@@ -35,9 +35,9 @@ interface Monad m => MonadSample m where
          r2 <- random
          pure $ Normal.normal m s r1 r2
 
-  --||| B(n, p)
-  --binomial : (n : Nat) -> (p : Double) -> m Nat
-  --binomial n p = pure $ length $ filter (== True) !(Data.List.replicateM n $ bernoulli p)
+  ||| B(n, p)
+  binomial : (n : Nat) -> (p : Double) -> m Nat
+  binomial n p = (pure . length . filter (== True)) !(sequence . replicate n $ bernoulli p)
 
 public export
 interface Monad m => MonadCond m where
