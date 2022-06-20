@@ -9,7 +9,7 @@ import Control.Monad.Bayes.Interface
 import Control.Monad.Free
 import Control.Monad.Free.Church
 --import Control.Monad.Trans.Free
-import Control.Monad.Trans.Free.Church
+import public Control.Monad.Trans.Free.Church
 
 ||| Random sampling functor
 public export
@@ -64,7 +64,7 @@ MonadTrans (\m => StateT (List Double) (WriterT (List Double) m)) where
 ||| Execute computation with supplied values for a subset of random choices.
 ||| Return the output value and a record of all random choices used, whether
 ||| taken as input or drawn using the transformed monad.
-export
+public export
 withPartialRandomness : (Monad m) => List Double -> FreeSampler m a -> m (a, List Double)
 withPartialRandomness randomness k = 
   runWriterT $ 

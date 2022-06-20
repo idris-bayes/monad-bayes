@@ -45,6 +45,8 @@ bind dx f = do
   t2 <- f (output t1)
   pure $ {variables := variables t1 ++ variables t2, density := density t1 * density t2} t2
 
+
+
 mhTrans : MonadSample m => Weighted (FreeSampler m) a -> Trace a -> m (Trace a)
 mhTrans mw t@(MkTrace {variables = us, output = x, density = p}) = do
   let n = length us -- need to ensure n >= 1
@@ -54,6 +56,7 @@ mhTrans mw t@(MkTrace {variables = us, output = x, density = p}) = do
     case splitAt i us of
       (xs, _ :: ys) => pure $ xs ++ (u' :: ys)
       _ => ?error_impossible
+  let mw'  =  Weighted.hoist (\free_sampler_m => writerT ((withPartialRandomness us' free_sampler_m))) mw
   -- ((b, q), vs) <- runWriterT $ runWeighted $ Weighted.hoist (WriterT . withPartialRandomness us') mw
   -- let ratio = (exp . ln) $ min 1 (q * fromIntegral n / (p * fromIntegral (length vs)))
   -- accept <- bernoulli ratio
