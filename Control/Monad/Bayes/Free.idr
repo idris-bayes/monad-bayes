@@ -9,7 +9,7 @@ import Control.Monad.Bayes.Interface
 import Control.Monad.Free
 import Control.Monad.Free.Church
 --import Control.Monad.Trans.Free
-import Control.Monad.Trans.Free.Church
+import public Control.Monad.Trans.Free.Church
 
 ||| Random sampling functor
 public export
@@ -58,11 +58,18 @@ withRandomness randomness = evalStateT randomness . iterTM f
             []      => ?randomness_too_short  -- ERROR
             y :: ys => put ys >> k y
 
+MonadTrans (\m => StateT (List Double) (WriterT (List Double) m)) where
+  lift = lift . lift
+
 ||| Execute computation with supplied values for a subset of random choices.
 ||| Return the output value and a record of all random choices used, whether
 ||| taken as input or drawn using the transformed monad.
-withPartialRandomness' : (MonadWriter (List Double) m, Monad m) => List Double -> FreeSampler m a -> m a
-withPartialRandomness' randomness k = evalStateT randomness $ iterTM f k
+public export
+withPartialRandomness : (Monad m) => List Double -> FreeSampler m a -> m (a, List Double)
+withPartialRandomness randomness k = 
+  runWriterT $ 
+    evalStateT {m = WriterT (List Double) m} randomness $ 
+      iterTM {t = \m => StateT (List Double) (WriterT (List Double) m) } f k
   where f : (MonadWriter (List Double) n, MonadState (List Double) n) => SamF (n a) -> n a
         f (Random k) = do
           xs <- the (n (List Double)) get
@@ -72,11 +79,6 @@ withPartialRandomness' randomness k = evalStateT randomness $ iterTM f k
           tell [x]
           k x
 
-withPartialRandomness : (Monad m, MonadWriter (List Double) m) => List Double -> FreeSampler m a -> m (List Double, a)
-withPartialRandomness randomness k = let wpr = withPartialRandomness' randomness k
-  -- let wpr = the (WriterT (List Double) m a) (withPartialRandomness' randomness k)
-  in ?rh
-
 ||| Like `withPartialRandomness`, but use an arbitrary sampling monad.
 runWith : {m : _} -> MonadSample m => List Double -> FreeSampler Identity a -> m (a, List Double)
-runWith randomness = ?withPartialRandomness_hole randomness . hoist {n=m} (pure . runIdentity)
+runWith randomness = withPartialRandomness randomness . hoist {n=m} (pure . runIdentity)

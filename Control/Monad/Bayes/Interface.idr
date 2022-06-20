@@ -14,6 +14,8 @@ import public Statistics.Distribution.Uniform
 import public Statistics.Distribution.Normal
 --import Statistics.Distribution.Binomial
 
+import Numeric.Log
+
 -- TODO: implement more distributions
 public export
 interface Monad m => MonadSample m where
@@ -39,10 +41,16 @@ interface Monad m => MonadSample m where
   binomial : (n : Nat) -> (p : Double) -> m Nat
   binomial n p = (pure . length . filter (== True)) !(sequence . replicate n $ bernoulli p)
 
+  ||| DiscUniform(range); should return Nat from 0 to (range - 1)
+  discreteUniform : (range : Nat) -> m Nat
+  discreteUniform range = do
+        r <- random
+        pure $ cast (floor (cast range * r))
+
 public export
 interface Monad m => MonadCond m where
   ||| Record a likelihood
-  score : Double -> m ()  -- TODO: replace with Log Double
+  score : Log Double -> m ()  
 
 export
 condition : MonadCond m => Bool -> m ()
