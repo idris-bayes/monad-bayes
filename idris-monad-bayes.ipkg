@@ -6,3 +6,4 @@ modules = Control.Monad.Bayes.Interface
         , Control.Monad.Bayes.Free
         , Control.Monad.Bayes.Weighted
         , Control.Monad.Bayes.Sampler
+        , Control.Monad.Bayes.Traced.Common
