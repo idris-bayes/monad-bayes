@@ -59,10 +59,6 @@ condition b = score $ if b then 1 else 0
 public export
 interface (MonadSample m, MonadCond m) => MonadInfer m where
 
-MonadSample IO where
-  random = randomIO
-
-
 -- Instances that lift probabilistic effects to standard transformers
 -- IdentityT
 {-
