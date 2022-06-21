@@ -8,4 +8,4 @@ modules = Control.Monad.Bayes.Interface
         , Control.Monad.Bayes.Sampler
         , Control.Monad.Bayes.Traced.Common
         , Control.Monad.Bayes.Traced.Static
-        , Control.Monad.Bayes.Example.LinRegr
+        , Control.Monad.Bayes.Examples.LinRegr
