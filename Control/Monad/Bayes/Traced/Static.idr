@@ -9,6 +9,7 @@ import Control.Monad.Free
 
 ||| A tracing monad where only a subset of random choices are traced.
 ||| The random choices that are not to be traced should be lifted from the transformed monad.
+public export
 record Traced (m : Type -> Type) (a : Type) where 
   constructor MkTraced
   model     : Weighted (FreeSampler m) a
@@ -51,11 +52,13 @@ marginal : Monad m => Traced m a -> m a
 marginal (MkTraced _ d) = map output d
 
 ||| A single step of the Trace Metropolis-Hastings algorithm.
+public export
 mhStep : MonadSample m => Traced m a -> Traced m a
 mhStep (MkTraced m d) = MkTraced m (d >>= mhTrans m)
 
 ||| Full run of the Trace Metropolis-Hastings algorithm with a specified
 ||| number of steps. Newest samples are at the head of the list.
+public export
 mh : MonadSample m => (n : Nat) -> Traced m a -> m (Vect (S n) a)
 mh n (MkTraced mod d) = map (map output) (f n)
   where
