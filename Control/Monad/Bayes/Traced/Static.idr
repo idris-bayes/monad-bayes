@@ -1,6 +1,6 @@
 module Control.Monad.Bayes.Traced.Static
 
-import Data.Vect
+import public Data.Vect
 import Control.Monad.Bayes.Interface
 import Control.Monad.Bayes.Traced.Common
 import Control.Monad.Bayes.Weighted
@@ -18,13 +18,16 @@ record Traced (m : Type -> Type) (a : Type) where
 liftA2 : Applicative f => (a -> b -> c) -> f a -> f b -> f c
 liftA2 f fa = (<*>) (map f fa)
 
+public export
 Monad m => Functor (Traced m) where
   map f (MkTraced m d) = MkTraced (map f m) (map (map f) d)
 
+public export
 Monad m => Applicative (Traced m) where
   pure x = MkTraced (pure x) (pure (pure x))
   (MkTraced mf df) <*> (MkTraced mx dx) = MkTraced (mf <*> mx) (liftA2 (<*>) df dx) 
 
+public export
 Monad m => Monad (Traced m) where
   (MkTraced mx dx) >>= f = MkTraced my dy
     where
@@ -33,15 +36,19 @@ Monad m => Monad (Traced m) where
       dy : m (Trace b)
       dy = dx `bind` (traceDist . f)
 
+public export
 MonadTrans Traced where
   lift m = MkTraced (lift $ lift m) (map pure m)
 
+public export
 MonadSample m => MonadSample (Traced m) where
   random = MkTraced random (map singleton random)
 
+public export
 MonadCond m => MonadCond (Traced m) where
   score w = MkTraced (score w) (score w >> pure (scored w))
-
+  
+public export
 MonadInfer m => MonadInfer (Traced m) where
 
 hoistT : (forall x. m x -> m x) -> Traced m a -> Traced m a

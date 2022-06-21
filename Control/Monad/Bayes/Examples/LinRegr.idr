@@ -4,14 +4,19 @@ import Data.Maybe
 import Data.List
 import Control.Monad.Bayes.Interface
 import Control.Monad.Bayes.Sampler
+import Control.Monad.Bayes.Weighted
+import Control.Monad.Bayes.Traced.Static
 import Statistics.Distribution.Normal
 import Numeric.Log
 
 record LinRegrParams where
   constructor MkLinRegrParams
-  m : Double
-  c : Double
-  σ : Double
+  m : Double   -- mean
+  c : Double   -- intercept
+  s : Double   -- standard deviation
+
+Show LinRegrParams where
+  show (MkLinRegrParams mv cv sv) = "(m : " ++ show mv ++ ", c : " ++ show cv ++ ", std : " ++ show sv ++ ")" 
 
 linRegr_prior : MonadSample m => Maybe Double -> Maybe Double -> Maybe Double -> m LinRegrParams
 linRegr_prior m0 c0 s0 = do
@@ -35,7 +40,16 @@ linRegr_inf m0 c0 s0 xys  = do
   _ <- sequence (map (\(x, y_obs) => score (Exp $ normal_pdf (mean * x + c) s y_obs)) xys)
   pure (MkLinRegrParams mean c s)
 
+||| Simulate outputs `ys` from a linear regression model
 simLinRegr : Nat -> IO (List Double)
 simLinRegr n_datapoints = do
-  sampleIO $ (linRegr_sim (Just 3) (Just 0) (Just 1) (map cast [0 ..  n_datapoints]))
+  ys <- sampleIO $ (linRegr_sim (Just 3) (Just 0) (Just 1) (map cast [0 ..  n_datapoints]))
+  print ys >> pure ys
 
+||| Perform MH inference over linear regression model parameters, `m`, `c`, `s`
+mhLinRegr : (n_samples : Nat) -> Nat -> IO (Vect (S n_samples) LinRegrParams)
+mhLinRegr n_samples n_datapoints = do
+  let linRegrData : Nat -> List (Double, Double)
+      linRegrData n_datapoints = zip (map cast [0 ..  n_datapoints]) (map (*3) (map cast [0 ..  n_datapoints]))
+  param_trace <- sampleIO $ prior $ mh n_samples (linRegr_inf Nothing Nothing Nothing (linRegrData n_datapoints))
+  print param_trace >> pure param_trace
