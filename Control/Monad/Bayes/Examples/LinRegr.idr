@@ -11,7 +11,6 @@ record LinRegrParams where
   c : Double
   σ : Double
 
-
 linRegr_prior : MonadSample m => Maybe Double -> Maybe Double -> Maybe Double -> m LinRegrParams
 linRegr_prior m0 c0 s0 = do
   m <- normal 0 3
@@ -28,7 +27,7 @@ linRegr_sim m0 c0 s0 xs  = do
   foldlM (\ys, x => do y <- normal (m * x + c) s
                        pure (y::ys)) [] xs
 
-simLinRegr : Nat -> Int -> IO (List (List Double))
-simLinRegr n_samples n_datapoints = do
-  sampleIO $ sequence $ replicate n_samples 
-    (linRegr_sim Nothing Nothing Nothing (map cast [0 ..  n_datapoints]))
+simLinRegr : Nat -> IO (List Double)
+simLinRegr n_datapoints = do
+  sampleIO $ (linRegr_sim (Just 3) (Just 0) (Just 1) (map cast [0 ..  n_datapoints]))
+
