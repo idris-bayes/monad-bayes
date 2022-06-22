@@ -12,7 +12,7 @@ import public Numeric.Log
 ||| Execute the program using the prior distribution, while accumulating likelihood.
 public export
 Weighted : (m : Type -> Type) -> (a : Type) -> Type
-Weighted = StateT (Log Double)  -- TODO: replace Double with Log Double
+Weighted m = StateT (Log Double) m -- TODO: replace Double with Log Double
 
 public export
 MonadSample m => MonadSample (Weighted m) where
