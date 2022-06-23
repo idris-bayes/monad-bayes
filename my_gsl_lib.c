@@ -2,10 +2,6 @@
 #include <math.h>
 #include <gsl/gsl_rng.h>
 
-double call_uniform(const gsl_rng* r){
-  return gsl_rng_uniform(r);
-}
-
 gsl_rng* init_gsl_rng() {
   gsl_rng* r;
   gsl_rng_env_setup();
@@ -15,4 +11,4 @@ gsl_rng* init_gsl_rng() {
   return r;    
 }
 
-// cc -shared -fPIC libm.c -o libm.so -lm -lgsl
+// cc -shared -fPIC my_gsl_lib.c -o my_gsl_lib.so -lm -lgsl
