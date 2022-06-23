@@ -21,8 +21,3 @@ sampleIO = id
 public export
 sampleIOwith : SamplerIO a -> Bits64 -> IO a
 sampleIOwith m seed = srand seed >> m
-
-||| Like 'sampleIO', but with a fixed random seed; useful for reproducibility. Using `0` as the default seed.
-public export
-sampleIOfixed : SamplerIO a -> IO a
-sampleIOfixed = flip sampleIOwith 0

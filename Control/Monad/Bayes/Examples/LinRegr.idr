@@ -43,7 +43,7 @@ linRegr_inf m0 c0 s0 xys  = do
 ||| Simulate outputs `ys` from a linear regression model
 simLinRegr : Nat -> IO (List Double)
 simLinRegr n_datapoints = do
-  ys <- sampleIOfixed $ (linRegr_sim (Just 3) (Just 0) (Just 1) (map cast [0 ..  n_datapoints]))
+  ys <- sampleIO $ (linRegr_sim (Just 3) (Just 0) (Just 1) (map cast [0 ..  n_datapoints]))
   print ys >> pure ys
 
 ||| Perform MH inference over linear regression model parameters, `m`, `c`, `s`
@@ -51,5 +51,5 @@ mhLinRegr : (n_samples : Nat) -> Nat -> IO (Vect (S n_samples) LinRegrParams)
 mhLinRegr n_samples n_datapoints = do
   let linRegrData : Nat -> List (Double, Double)
       linRegrData n_datapoints = zip (map cast [0 ..  n_datapoints]) (map (*3) (map cast [0 ..  n_datapoints]))
-  param_trace <- sampleIOfixed $ prior $ mh n_samples (linRegr_inf Nothing Nothing Nothing (linRegrData n_datapoints))
+  param_trace <- sampleIO $ prior $ mh n_samples (linRegr_inf Nothing Nothing Nothing (linRegrData n_datapoints))
   print param_trace >> pure param_trace
