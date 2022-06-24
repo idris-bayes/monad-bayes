@@ -48,8 +48,7 @@ interface Monad m => MonadSample m where
         r <- random
         pure $ cast (floor (cast range * r))
 
-  -- ||| TO DO:
-
+  ||| Categorical(ps)
   partial
   categorical : Vect n Double -> m (Fin n)
   categorical ps = do
@@ -58,21 +57,25 @@ interface Monad m => MonadSample m where
         normalised_ps = map (/total_ps) ps 
     case findIndex (>= r) normalised_ps of
       Just i  => pure i
-      -- Nothing => ?t
+      Nothing => idris_crash "categorical: bad weights!"
 
   -- logCategorical : {n : Nat} ->
   --       -- | event probabilities
   --       Vect n (Log Double) ->
   --       -- | outcome category
   --       m (Fin n)
-  -- logCategorical logps = do 
-  --   let total_logps : Vect n Double
-  --       total_logps = let vs = map (exp . ln) logps in map (/sum vs) vs
-  --       pick : Vect n a -> Double -> Fin n -> Fin n
-  --       pick (p :: ps) acc_p = 
-  --       -- pick (logp :: rest) p =
-  --       --   case p -   
-  --   p <- random -- ?todo_log_cat
+  -- logCategorical logps = do
+  --   let max : Vect n (Log Double) -> Log Double -> Log Double
+  --       max [] = if m > (-1/0) 
+  --       max (b :: bs) m = if b > m then b else loop bs m 
+  --   (maximum logps)
+    -- let total_logps : Vect n Double
+    --     total_logps = let vs = map (exp . ln) logps in map (/sum vs) vs
+    --     pick : Vect n a -> Double -> Fin n -> Fin n
+    --     pick (p :: ps) acc_p = 
+    --     -- pick (logp :: rest) p =
+    --     --   case p -   
+    -- p <- random -- ?todo_log_cat
   --   ?h
 
 public export
