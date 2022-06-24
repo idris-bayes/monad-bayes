@@ -53,6 +53,10 @@ spawn : Monad m => Nat -> Population m ()
 spawn n = fromWeightedList $ pure $ replicate n (Exp (1.0 / cast n), ()) 
 -- | TODO: need to check if numeric values "5 : Log Double" means "Exp 5" or "Exp (log 5)" in Haskell version
 
+
+  
+||| Separate the sum of weights into the 'Weighted' transformer.
+||| Weights are normalized after this operation.
 extractEvidence :
   Monad m =>
   Population m a ->
@@ -65,22 +69,29 @@ extractEvidence m = fromWeightedList $ do
   score z
   pure $ zip ws xs 
 
+-- | Push the evidence estimator as a score to the transformed monad.
+-- Weights are normalized after this operation.
+pushEvidence :
+  MonadCond m =>
+  Population m a ->
+  Population m a
+pushEvidence = hoist applyWeight . extractEvidence
+
 ||| A properly weighted single sample, that is one picked at random according
 ||| to the weights, with the sum of all weights.
 proper :
   (MonadSample m) =>
   Population m a ->
   Weighted m a
-proper mod = do
-  pop <- runPopulation $ extractEvidence mod
-  let (ps_vec, xs_vec) = unzip (fromList pop)
-  idx <- the (Weighted m (Fin (length pop))) (logCategorical ps_vec)
+proper pop = do
+  particles <- runPopulation $ extractEvidence pop
+  let (ps_vec, xs_vec) = unzip (fromList particles)
+  idx <- the (Weighted m (Fin (length particles))) (logCategorical ps_vec)
   pure (index idx xs_vec)
 
 ||| Model evidence estimator, also known as pseudo-marginal likelihood.
 evidence : (Monad m) => Population m a -> m (Log Double)
 evidence = extractWeight . runPopulation . extractEvidence
-
 
 ||| Picks one point from the population and uses model evidence as a 'score' in the transformed monad.
 ||| This way a single sample can be selected from a population without introducing bias.
