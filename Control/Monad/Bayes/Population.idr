@@ -43,3 +43,45 @@ fromWeightedList = withWeight . MkListT
 spawn : Monad m => Nat -> Population m ()
 spawn n = fromWeightedList $ pure $ replicate n (Exp (1.0 / cast n), ()) 
 -- | TODO: need to check if numeric values "5 : Log Double" means "Exp 5" or "Exp (log 5)" in Haskell version
+
+
+-- systematic : Double -> List Double -> List Nat
+-- systematic u ps = f 0 (u / fromIntegral n) 0 0 []
+--   where
+--     prob : (i : Nat) ->  InBounds i ps => Double
+--     prob i = index i ps 
+--     n : Nat 
+--     n = length ps
+--     inc : Double
+--     inc = 1.0 / cast n
+
+--     unsucc : Nat -> Nat
+--     unsucc (S k) = k
+--     unsucc Z     = Z
+
+--     f : (i : Nat) -> InBounds (S i) ps => Double -> (j : Nat) -> Double -> (acc : List Nat) -> List Nat
+--     f i v j q acc =
+--       if i == n then acc
+--       else if v < q then f (S i) (v + inc) j q (unsucc j :: acc)
+--       else f i v (j + 1) (q + prob j) acc
+
+||| Combine a population of populations into a single population.
+flatten : Monad m => Population (Population m) a -> Population m a
+flatten nestedPop = withWeight $ MkListT t
+  where
+    f : List (Log Double, List (Log Double, a)) -> List (Log Double, a)
+    f d = do
+      (p, x) <- d
+      (q, y) <- x
+      pure (p * q, y)
+
+    t : m (List (Log Double, a))
+    t = f <$> (runPopulation . runPopulation) nestedPop
+
+||| Applies a transformation to the inner monad.
+hoist :
+  Monad n =>
+  (forall x. m x -> n x) ->
+  Population m a ->
+  Population n a
+hoist f = fromWeightedList . f . runPopulation
