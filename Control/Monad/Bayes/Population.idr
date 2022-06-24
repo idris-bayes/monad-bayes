@@ -1,6 +1,7 @@
 module Control.Monad.Bayes.Population
 
 import Control.Monad.Bayes.Weighted
+import Control.Monad.Bayes.Interface
 import Data.List
 
 namespace ListT
@@ -44,26 +45,37 @@ spawn : Monad m => Nat -> Population m ()
 spawn n = fromWeightedList $ pure $ replicate n (Exp (1.0 / cast n), ()) 
 -- | TODO: need to check if numeric values "5 : Log Double" means "Exp 5" or "Exp (log 5)" in Haskell version
 
+extractEvidence :
+  Monad m =>
+  Population m a ->
+  Population (Weighted m) a
+extractEvidence m = fromWeightedList $ do
+  pop <- lift $ runPopulation m -- List (Log Double, a)
+  let (ps, xs) = unzip pop
+      z = sum ps
+      ws = map (if z > 0 then (/ z) else const (Exp $ 1.0 / cast (length ps))) ps
+  score z
+  pure $ zip ws xs 
 
--- systematic : Double -> List Double -> List Nat
--- systematic u ps = f 0 (u / fromIntegral n) 0 0 []
---   where
---     prob : (i : Nat) ->  InBounds i ps => Double
---     prob i = index i ps 
---     n : Nat 
---     n = length ps
---     inc : Double
---     inc = 1.0 / cast n
+||| Applies a transformation to the inner monad.
+hoist :
+  Monad m2 =>
+  (forall x. m1 x -> m2 x) ->
+  Population m1 a ->
+  Population m2 a
+hoist f = fromWeightedList . f . runPopulation
 
---     unsucc : Nat -> Nat
---     unsucc (S k) = k
---     unsucc Z     = Z
+||| Normalizes the weights in the population so that their sum is 1.
+||| This transformation introduces bias.
+normalize : Monad m => Population m a -> Population m a
+normalize pop = hoist {m1 = Weighted m} {m2 = m} prior (extractEvidence pop)
 
---     f : (i : Nat) -> InBounds (S i) ps => Double -> (j : Nat) -> Double -> (acc : List Nat) -> List Nat
---     f i v j q acc =
---       if i == n then acc
---       else if v < q then f (S i) (v + inc) j q (unsucc j :: acc)
---       else f i v (j + 1) (q + prob j) acc
+||| Population average of a function, computed using unnormalized weights.
+popAvg : (Monad m) => (a -> Double) -> Population m a -> m Double
+popAvg f p = do
+  xs <- explicitPopulation p
+  let ys = map (\(w, x) => f x * w) xs
+  pure (sum ys)
 
 ||| Combine a population of populations into a single population.
 flatten : Monad m => Population (Population m) a -> Population m a
@@ -78,10 +90,3 @@ flatten nestedPop = withWeight $ MkListT t
     t : m (List (Log Double, a))
     t = f <$> (runPopulation . runPopulation) nestedPop
 
-||| Applies a transformation to the inner monad.
-hoist :
-  Monad n =>
-  (forall x. m x -> n x) ->
-  Population m a ->
-  Population n a
-hoist f = fromWeightedList . f . runPopulation
