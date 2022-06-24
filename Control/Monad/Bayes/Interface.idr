@@ -17,6 +17,7 @@ import public Statistics.Distribution.Normal
 
 import Numeric.Log
 
+%default total
 -- TODO: implement more distributions
 public export
 interface Monad m => MonadSample m where
@@ -49,7 +50,6 @@ interface Monad m => MonadSample m where
         pure $ cast (floor (cast range * r))
 
   ||| Categorical(ps)
-  partial
   categorical : Vect n Double -> m (Fin n)
   categorical ps = do
     r <- random
@@ -57,26 +57,13 @@ interface Monad m => MonadSample m where
         normalised_ps = map (/total_ps) ps 
     case findIndex (>= r) normalised_ps of
       Just i  => pure i
-      Nothing => idris_crash "categorical: bad weights!"
+      Nothing => assert_total $ idris_crash "categorical: bad weights!"
 
-  -- logCategorical : {n : Nat} ->
-  --       -- | event probabilities
-  --       Vect n (Log Double) ->
-  --       -- | outcome category
-  --       m (Fin n)
-  -- logCategorical logps = do
-  --   let max : Vect n (Log Double) -> Log Double -> Log Double
-  --       max [] = if m > (-1/0) 
-  --       max (b :: bs) m = if b > m then b else loop bs m 
-  --   (maximum logps)
-    -- let total_logps : Vect n Double
-    --     total_logps = let vs = map (exp . ln) logps in map (/sum vs) vs
-    --     pick : Vect n a -> Double -> Fin n -> Fin n
-    --     pick (p :: ps) acc_p = 
-    --     -- pick (logp :: rest) p =
-    --     --   case p -   
-    -- p <- random -- ?todo_log_cat
-  --   ?h
+  ||| Log-categorical(log-ps)
+  logCategorical : Vect n (Log Double) -> m (Fin n)
+  logCategorical logps = do
+    let ps = map (exp . ln) logps
+    categorical ps
 
 public export
 interface Monad m => MonadCond m where
@@ -89,17 +76,6 @@ condition b = score $ if b then 1 else 0
 
 public export
 interface (MonadSample m, MonadCond m) => MonadInfer m where
-
--- Instances that lift probabilistic effects to standard transformers
--- IdentityT
-{-
-MonadSample m => MonadSample (IdentityT m) where
-  random = lift random
-  bernoulli = lift . bernoulli
-MonadCond m => MonadCond (IdentityT m) where
-  score = lift . score
-MonadInfer m => MonadInfer (IdentityT m) where
--}
 
 -- MaybeT
 MonadSample m => MonadSample (MaybeT m) where
