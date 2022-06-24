@@ -53,18 +53,36 @@ spawn : Monad m => Nat -> Population m ()
 spawn n = fromWeightedList $ pure $ replicate n (Exp (1.0 / cast n), ()) 
 -- | TODO: need to check if numeric values "5 : Log Double" means "Exp 5" or "Exp (log 5)" in Haskell version
 
+resampleGeneric :
+  MonadSample m =>
+  -- | resampler
+  (forall k. Vect k Double -> m (List (Fin k))) ->
+  Population m a ->
+  Population m a
+resampleGeneric resampler pop = fromWeightedList $ do
+  particles <- runPopulation pop
+  let (log_ps, xs) : (Vect (length particles) (Log Double), Vect (length particles) a) = unzip (fromList particles)
+      n = length xs
+      z = Numeric.Log.sum log_ps
+  if z > 0
+    then do
+      let weights = (map (exp . ln . (/ z)) log_ps)
+      ancestors <- resampler weights
+      let offsprings = map (\idx => index idx xs) ancestors
+      pure $ map (z / cast n, ) offsprings
+    else
+      pure particles
 
-  
 ||| Separate the sum of weights into the 'Weighted' transformer.
 ||| Weights are normalized after this operation.
 extractEvidence :
   Monad m =>
   Population m a ->
   Population (Weighted m) a
-extractEvidence m = fromWeightedList $ do
-  pop <- lift $ runPopulation m -- List (Log Double, a)
-  let (ps, xs) = unzip pop
-      z = sum ps
+extractEvidence pop = fromWeightedList $ do
+  particles <- lift $ runPopulation pop -- List (Log Double, a)
+  let (ps, xs) = unzip particles
+      z = Numeric.Log.sum ps
       ws = map (if z > 0 then (/ z) else const (Exp $ 1.0 / cast (length ps))) ps
   score z
   pure $ zip ws xs 
@@ -119,7 +137,7 @@ popAvg : (Monad m) => (a -> Double) -> Population m a -> m Double
 popAvg f p = do
   xs <- explicitPopulation p
   let ys = map (\(w, x) => f x * w) xs
-  pure (sum ys)
+  pure (Prelude.sum ys)
 
 ||| Combine a population of populations into a single population.
 flatten : Monad m => Population (Population m) a -> Population m a

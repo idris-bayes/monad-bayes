@@ -15,7 +15,7 @@ import public Statistics.Distribution.Uniform
 import public Statistics.Distribution.Normal
 --import Statistics.Distribution.Binomial
 
-import Numeric.Log
+import public Numeric.Log
 
 %default total
 -- TODO: implement more distributions
