@@ -72,6 +72,41 @@ resampleGeneric resampler pop = fromWeightedList $ do
     else
       pure particles
 
+||| Systematic sampler.
+systematic : {n : Nat} -> Double -> Vect (S n) Double -> List (Fin (S n))
+systematic u ps = 
+  let prob : Fin (S n) -> Double
+      prob i = index i ps
+
+      inc : Double
+      inc = 1 / (the Double (cast n))
+
+      bounded_succ : {x : Nat} -> Fin x -> Fin x
+      bounded_succ k = case strengthen (FS k) of Just sx => sx
+                                                 Nothing => k
+
+      bounded_unsucc : Fin x -> Fin x
+      bounded_unsucc FZ = FZ
+      bounded_unsucc (FS k) = weaken k
+
+      f : Fin (S n) -> Double -> Fin (S n) -> Double -> List (Fin (S n)) -> List (Fin (S n))
+      f i v j q acc = 
+        if finToNat i == n then acc else
+        if v < q
+          then f (bounded_succ i) (v + inc) j q (bounded_unsucc j :: acc)
+          else f i v (bounded_succ j) (q + prob j) acc
+      
+  in  f FZ (u / cast n) FZ 0.0 []
+
+-- ||| Resample the population using the underlying monad and a systematic resampling scheme.
+-- ||| The total weight is preserved.
+-- resampleSystematic :
+--   (MonadSample m) =>
+--   Population m a ->
+--   Population m a
+-- resampleSystematic = resampleGeneric (\ps : ({n : Nat} -> Vect (S n) Double) => 
+--    (`systematic` ps) <$> random)
+
 ||| Multinomial sampler.  Sample from \(0, \ldots, n - 1\) \(n\)
 ||| times drawn at random according to the weights where \(n\) is the
 ||| length of vector of weights.
