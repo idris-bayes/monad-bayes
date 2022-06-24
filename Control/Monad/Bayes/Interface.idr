@@ -49,6 +49,17 @@ interface Monad m => MonadSample m where
         pure $ cast (floor (cast range * r))
 
   -- ||| TO DO:
+
+  partial
+  categorical : Vect n Double -> m (Fin n)
+  categorical ps = do
+    r <- random
+    let total_ps = sum ps 
+        normalised_ps = map (/total_ps) ps 
+    case findIndex (>= r) normalised_ps of
+      Just i  => pure i
+      -- Nothing => ?t
+
   -- logCategorical : {n : Nat} ->
   --       -- | event probabilities
   --       Vect n (Log Double) ->
