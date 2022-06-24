@@ -7,7 +7,7 @@ import Control.Monad.State
 import Control.Monad.Trans
 import Control.Monad.Writer
 import public Data.List
-import Data.Vect
+import public Data.Vect
 import System.Random
 
 --import Control.Monad.Trans.Identity

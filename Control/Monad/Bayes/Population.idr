@@ -67,16 +67,15 @@ extractEvidence m = fromWeightedList $ do
 
 ||| A properly weighted single sample, that is one picked at random according
 ||| to the weights, with the sum of all weights.
--- proper :
---   (MonadSample m) =>
---   Population m a ->
---   Weighted m a
--- proper m = do
---   pop <- runPopulation $ extractEvidence m
---   let (ps, xs) = unzip pop
---   idx <- ?logCategorical $ ps
---   let x = index idx xs
---   pure x
+proper :
+  (MonadSample m) =>
+  Population m a ->
+  Weighted m a
+proper mod = do
+  pop <- runPopulation $ extractEvidence mod
+  let (ps_vec, xs_vec) = unzip (fromList pop)
+  idx <- the (Weighted m (Fin (length pop))) (logCategorical ps_vec)
+  pure (index idx xs_vec)
 
 ||| Model evidence estimator, also known as pseudo-marginal likelihood.
 evidence : (Monad m) => Population m a -> m (Log Double)
@@ -85,11 +84,11 @@ evidence = extractWeight . runPopulation . extractEvidence
 
 ||| Picks one point from the population and uses model evidence as a 'score' in the transformed monad.
 ||| This way a single sample can be selected from a population without introducing bias.
--- collapse :
---   (MonadInfer m) =>
---   Population m a ->
---   m a
--- collapse = applyWeight . proper
+collapse :
+  (MonadInfer m) =>
+  Population m a ->
+  m a
+collapse = applyWeight . proper
 
 ||| Applies a random transformation to a population.
 mapPopulation :
