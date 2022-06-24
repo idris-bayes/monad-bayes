@@ -50,13 +50,12 @@ hoist f = fromWeightedList . f . runPopulation
 ||| The weights are adjusted such that their sum is preserved. It is therefore 
 ||| safe to use 'spawn' in arbitrary places in the program without introducing bias.
 spawn : Monad m => Nat -> Population m ()
-spawn n = fromWeightedList $ pure $ replicate n (Exp (1.0 / cast n), ()) 
--- | TODO: need to check if numeric values "5 : Log Double" means "Exp 5" or "Exp (log 5)" in Haskell version
+spawn n = fromWeightedList $ pure $ replicate n (Exp (1.0 / the (Double) (cast n)), ()) 
 
 resampleGeneric :
-  MonadSample m =>
+  MonadSample m => 
   -- | resampler
-  (forall k. Vect k Double -> m (List (Fin k))) ->
+  ({k : Nat} -> Vect k Double -> m (List (Fin k))) ->
   Population m a ->
   Population m a
 resampleGeneric resampler pop = fromWeightedList $ do
@@ -73,6 +72,20 @@ resampleGeneric resampler pop = fromWeightedList $ do
     else
       pure particles
 
+||| Multinomial sampler.  Sample from \(0, \ldots, n - 1\) \(n\)
+||| times drawn at random according to the weights where \(n\) is the
+||| length of vector of weights.
+multinomial : MonadSample m => {n : Nat} -> Vect n Double -> m (List (Fin n))
+multinomial ps = sequence $ replicate n (categorical ps)
+
+||| Resample the population using the underlying monad and a multinomial resampling scheme.
+||| The total weight is preserved.
+resampleMultinomial :
+  (MonadSample m) =>
+  Population m a ->
+  Population m a
+resampleMultinomial = resampleGeneric multinomial
+
 ||| Separate the sum of weights into the 'Weighted' transformer.
 ||| Weights are normalized after this operation.
 extractEvidence :
@@ -81,9 +94,9 @@ extractEvidence :
   Population (Weighted m) a
 extractEvidence pop = fromWeightedList $ do
   particles <- lift $ runPopulation pop -- List (Log Double, a)
-  let (ps, xs) = unzip particles
-      z = Numeric.Log.sum ps
-      ws = map (if z > 0 then (/ z) else const (Exp $ 1.0 / cast (length ps))) ps
+  let (log_ps, xs) = unzip particles
+      z = Numeric.Log.sum log_ps
+      ws = map (if z > 0 then (/ z) else const (Exp $ 1.0 / cast (length log_ps))) log_ps
   score z
   pure $ zip ws xs 
 
@@ -103,8 +116,8 @@ proper :
   Weighted m a
 proper pop = do
   particles <- runPopulation $ extractEvidence pop
-  let (ps_vec, xs_vec) = unzip (fromList particles)
-  idx <- the (Weighted m (Fin (length particles))) (logCategorical ps_vec)
+  let (log_ps_vec, xs_vec) = unzip (fromList particles)
+  idx <- the (Weighted m (Fin (length particles))) (logCategorical log_ps_vec)
   pure (index idx xs_vec)
 
 ||| Model evidence estimator, also known as pseudo-marginal likelihood.
