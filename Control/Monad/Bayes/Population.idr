@@ -38,6 +38,14 @@ explicitPopulation = map (map (\(log_p, a) => (exp (ln log_p), a))) . runPopulat
 fromWeightedList : Monad m => m (List (Log Double, a)) -> Population m a
 fromWeightedList = withWeight . MkListT
 
+||| Applies a transformation to the inner monad.
+hoist :
+  Monad m2 =>
+  (forall x. m1 x -> m2 x) ->
+  Population m1 a ->
+  Population m2 a
+hoist f = fromWeightedList . f . runPopulation
+
 ||| Increase the sample size by a given factor.
 ||| The weights are adjusted such that their sum is preserved. It is therefore 
 ||| safe to use 'spawn' in arbitrary places in the program without introducing bias.
@@ -57,13 +65,39 @@ extractEvidence m = fromWeightedList $ do
   score z
   pure $ zip ws xs 
 
-||| Applies a transformation to the inner monad.
-hoist :
-  Monad m2 =>
-  (forall x. m1 x -> m2 x) ->
-  Population m1 a ->
-  Population m2 a
-hoist f = fromWeightedList . f . runPopulation
+||| A properly weighted single sample, that is one picked at random according
+||| to the weights, with the sum of all weights.
+-- proper :
+--   (MonadSample m) =>
+--   Population m a ->
+--   Weighted m a
+-- proper m = do
+--   pop <- runPopulation $ extractEvidence m
+--   let (ps, xs) = unzip pop
+--   idx <- ?logCategorical $ ps
+--   let x = index idx xs
+--   pure x
+
+||| Model evidence estimator, also known as pseudo-marginal likelihood.
+evidence : (Monad m) => Population m a -> m (Log Double)
+evidence = extractWeight . runPopulation . extractEvidence
+
+
+||| Picks one point from the population and uses model evidence as a 'score' in the transformed monad.
+||| This way a single sample can be selected from a population without introducing bias.
+-- collapse :
+--   (MonadInfer m) =>
+--   Population m a ->
+--   m a
+-- collapse = applyWeight . proper
+
+||| Applies a random transformation to a population.
+mapPopulation :
+  (Monad m) =>
+  (List (Log Double, a) -> m (List (Log Double, a))) ->
+  Population m a ->
+  Population m a
+mapPopulation f m = fromWeightedList $ runPopulation m >>= f
 
 ||| Normalizes the weights in the population so that their sum is 1.
 ||| This transformation introduces bias.

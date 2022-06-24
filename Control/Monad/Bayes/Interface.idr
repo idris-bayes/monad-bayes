@@ -7,6 +7,7 @@ import Control.Monad.State
 import Control.Monad.Trans
 import Control.Monad.Writer
 import public Data.List
+import Data.Vect
 import System.Random
 
 --import Control.Monad.Trans.Identity
@@ -46,6 +47,22 @@ interface Monad m => MonadSample m where
   discreteUniform range = do
         r <- random
         pure $ cast (floor (cast range * r))
+
+  -- ||| TO DO:
+  -- logCategorical : {n : Nat} ->
+  --       -- | event probabilities
+  --       Vect n (Log Double) ->
+  --       -- | outcome category
+  --       m (Fin n)
+  -- logCategorical logps = do 
+  --   let total_logps : Vect n Double
+  --       total_logps = let vs = map (exp . ln) logps in map (/sum vs) vs
+  --       pick : Vect n a -> Double -> Fin n -> Fin n
+  --       pick (p :: ps) acc_p = 
+  --       -- pick (logp :: rest) p =
+  --       --   case p -   
+  --   p <- random -- ?todo_log_cat
+  --   ?h
 
 public export
 interface Monad m => MonadCond m where
