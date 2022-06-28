@@ -7,6 +7,7 @@ import Control.Monad.Bayes.Weighted
 
 ||| Sequential importance resampling.
 -- An SMC template that takes a custom resampler.
+export
 sir :
   (isMonad : Monad m) =>
   -- | resampler
@@ -22,6 +23,7 @@ sir resampler k n = sis resampler k . Sequential.hoistFirst (spawn n >>)
 
 ||| Sequential Monte Carlo with multinomial resampling at each timestep.
 -- Weights are not normalized.
+export
 smcMultinomial :
   MonadSample m =>
   -- | number of timesteps
@@ -35,6 +37,7 @@ smcMultinomial = sir resampleMultinomial
 
 ||| Sequential Monte Carlo with systematic resampling at each timestep.
 -- Weights are not normalized.
+export
 smcSystematic :
   MonadSample m =>
   -- | number of timesteps
@@ -49,6 +52,7 @@ smcSystematic = sir resampleSystematic
 ||| Sequential Monte Carlo with multinomial resampling at each timestep.
 -- Weights are normalized at each timestep and the total weight is pushed
 -- as a score into the transformed monad.
+export
 smcMultinomialPush :
   MonadInfer m =>
   -- | number of timesteps
@@ -63,6 +67,7 @@ smcMultinomialPush = sir (pushEvidence . resampleMultinomial)
 ||| Sequential Monte Carlo with systematic resampling at each timestep.
 -- Weights are normalized at each timestep and the total weight is pushed
 -- as a score into the transformed monad.
+export
 smcSystematicPush :
   MonadInfer m =>
   -- | number of timesteps

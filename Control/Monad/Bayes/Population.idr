@@ -1,6 +1,6 @@
 module Control.Monad.Bayes.Population
 
-import Control.Monad.Bayes.Weighted
+import public Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Interface
 import Control.Monad.Trans
 import Data.List
