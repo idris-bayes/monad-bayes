@@ -72,8 +72,8 @@ MonadSample m => MonadSample (Population m) where
   random = lift random
 
 export
-MonadCond m => MonadCond (Population m) where
-  score = lift . score 
+Monad m => MonadCond (Population m) where
+  score w = MkPopulation $ score w -- Call score from Weighted
 
 export
 MonadInfer m => MonadInfer (Population m) where

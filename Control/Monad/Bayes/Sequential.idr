@@ -26,7 +26,7 @@ implementation Applicative (Sequential m) where
   R op k <*> p = R op (\x => k x <*> p) 
   L f    <*> p = map f p
 
-export
+public export
 implementation Monad (Sequential m) where
   R op k >>= f = R op ( assert_total (>>= f) . k)
   L x   >>= f  = f x

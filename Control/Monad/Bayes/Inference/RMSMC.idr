@@ -9,6 +9,7 @@ import Control.Monad.Bayes.Traced.Basic
 import Control.Monad.Bayes.Traced.Dynamic
 
 ||| Resample-move Sequential Monte Carlo.
+export
 rmsmc :
   MonadSample m =>
   -- | number of timesteps
@@ -27,6 +28,7 @@ rmsmc k n t =
 
 ||| Resample-move Sequential Monte Carlo with a more efficient
 ||| tracing representation.
+export
 rmsmcBasic :
   MonadSample m =>
   -- | number of timesteps
@@ -46,6 +48,7 @@ rmsmcBasic k n t =
 ||| A variant of resample-move Sequential Monte Carlo
 ||| where only random variables since last resampling are considered
 ||| for rejuvenation.
+export
 rmsmcLocal :
   MonadSample m =>
   -- | number of timesteps
