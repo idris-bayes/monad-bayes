@@ -1,4 +1,4 @@
-module Control.Monad.Bayes.SamplerIo
+module Control.Monad.Bayes.SamplerGSL
 
 import Control.Monad.Reader
 import Statistics.Distribution.GSL
