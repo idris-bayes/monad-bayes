@@ -1,6 +1,7 @@
 module Control.Monad.Bayes.Sequential
 
 import Control.Monad.Trans
+import Control.Monad.Bayes.Interface
 
 public export
 data Lift : (m : Type -> Type) -> Type -> Type where
@@ -30,8 +31,8 @@ implementation Monad (Seq m) where
 
 export
 MonadTrans Seq where
-  -- lift : Monad m => m a -> Seq m a
-  lift mx = R mx (\x => L x)
+-- lift : Monad m => m a -> Seq m a
+   lift mx = R mx (\x => L x) 
 
 suspend : Monad m => Seq m ()
 suspend = lift (pure ())
@@ -39,3 +40,21 @@ suspend = lift (pure ())
 advance : Monad m => Seq m a -> (Seq m a)
 advance (L a) = L a
 advance (R mx k) = (lift mx) >>= k
+
+finish : Monad m => Seq m a -> m a
+finish (L a) = pure a
+finish (R mx k) = mx >>= (finish . k)
+
+finished : Monad m => Seq m a -> m Bool
+finished (L a) = pure True
+finished   _   = pure False
+
+MonadSample m => MonadSample (Seq m) where
+  random = lift random
+
+MonadCond m => MonadCond (Seq m) where
+  score w = lift (score w) >> suspend
+
+hoist : (Monad m, Monad n) => (forall x. m x -> n x) -> Seq m a -> Seq n a
+hoist f (L a) = (L a)  
+hoist f (R mx k) = R (f mx) (hoist f . k)
