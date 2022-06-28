@@ -76,11 +76,13 @@ hoistFirst f (R mx k) = R (f mx) k
 
 ||| Transform the inner monad.
 -- The transformation is applied recursively through all the suspension points.
+export
 hoist : (Monad m, Monad n) => (forall x. m x -> n x) -> Sequential m a -> Sequential n a
 hoist f (L a) = (L a)  
 hoist f (R mx k) = R (f mx) (hoist f . k)
 
 ||| Apply a function a given number of times.
+export
 composeCopies : Nat -> (a -> a) -> (a -> a)
 composeCopies k f = foldr (.) id (List.replicate k f)
 

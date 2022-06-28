@@ -5,6 +5,7 @@ import Control.Monad.Bayes.Interface
 import Control.Monad.Trans
 import Data.List
 
+||| List transformer
 public export
 record ListT (m : Type -> Type) (a : Type) where
   constructor MkListT 
@@ -38,6 +39,17 @@ Population m = Weighted (ListT m)
 export
 MonadTrans Population where
   lift = lift . lift
+
+export
+MonadSample m => MonadSample (Population m) where
+  random = (lift . lift) random
+
+export
+MonadCond m => MonadCond (Population m) where
+  score w = (lift . lift) (score w)
+
+export
+MonadSample m => MonadInfer (Population m) where
 
 ||| Explicit representation of the weighted sample with weights in the log domain.
 export
