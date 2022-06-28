@@ -13,4 +13,5 @@ modules = Control.Monad.Bayes.Interface
         , Control.Monad.Bayes.Traced.Dynamic
         , Control.Monad.Bayes.Traced.Static
         , Control.Monad.Bayes.Inference.SMC
+        , Control.Monad.Bayes.Inference.RMSMC
         , Control.Monad.Bayes.Examples.LinRegr

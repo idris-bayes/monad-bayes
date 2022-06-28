@@ -47,10 +47,12 @@ MonadCond m => MonadCond (Traced m) where
 export
 MonadInfer m => MonadInfer (Traced m) where
 
+export
 hoistT : (forall x. m x -> m x) -> Traced m a -> Traced m a
 hoistT f (MkTraced m d) = MkTraced m (f d)
 
 ||| Discard the trace and supporting infrastructure.
+export
 marginal : Monad m => Traced m a -> m a
 marginal (MkTraced _ d) = map output d
 
