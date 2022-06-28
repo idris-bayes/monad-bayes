@@ -4,41 +4,46 @@ import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Interface
 import Data.List
 
-namespace ListT
-  record ListT (m : Type -> Type) (a : Type) where
-    constructor MkListT 
-    runListT : m (List a)
+public export
+record ListT (m : Type -> Type) (a : Type) where
+  constructor MkListT 
+  runListT : m (List a)
 
-  Functor m => Functor (ListT m) where
-    map f (MkListT mas) = MkListT (map (map f) mas) 
+Functor m => Functor (ListT m) where
+  map f (MkListT mas) = MkListT (map (map f) mas) 
 
-  Applicative m => Applicative (ListT m) where
-    pure x = MkListT (pure [x])
-    (MkListT mf) <*> (MkListT mx) = MkListT ((map (<*>) mf) <*> mx) 
+Applicative m => Applicative (ListT m) where
+  pure x = MkListT (pure [x])
+  (MkListT mf) <*> (MkListT mx) = MkListT ((map (<*>) mf) <*> mx) 
 
-  Monad m => Monad (ListT m) where
-    (MkListT mas) >>= f = MkListT $ do
-      as <- mas
-      bss <- sequence (map (runListT . f) as)
-      pure (concat bss)
+Monad m => Monad (ListT m) where
+  (MkListT mas) >>= f = MkListT $ do
+    as <- mas
+    bss <- sequence (map (runListT . f) as)
+    pure (concat bss)
 
 ||| A collection of weighted samples, or particles.
+export
 Population : (m : Type -> Type) -> (a : Type) -> Type
 Population m = Weighted (ListT m)
 
 ||| Explicit representation of the weighted sample with weights in the log domain.
+export
 runPopulation : Population m a -> m (List (Log Double, a))
 runPopulation = runListT . runWeighted
 
 ||| Explicit representation of the weighted sample.
+export
 explicitPopulation : Functor m => Population m a -> m (List (Double, a))
 explicitPopulation = map (map (\(log_p, a) => (exp (ln log_p), a))) . runPopulation
 
 ||| Initialize 'Population' with a concrete weighted sample.
+export
 fromWeightedList : Monad m => m (List (Log Double, a)) -> Population m a
 fromWeightedList = withWeight . MkListT
 
 ||| Applies a transformation to the inner monad.
+export
 hoist :
   Monad m2 =>
   (forall x. m1 x -> m2 x) ->
@@ -49,9 +54,11 @@ hoist f = fromWeightedList . f . runPopulation
 ||| Increase the sample size by a given factor.
 ||| The weights are adjusted such that their sum is preserved. It is therefore 
 ||| safe to use 'spawn' in arbitrary places in the program without introducing bias.
+export
 spawn : Monad m => Nat -> Population m ()
 spawn n = fromWeightedList $ pure $ replicate n (Exp (1.0 / the (Double) (cast n)), ()) 
 
+export
 resampleGeneric :
   MonadSample m => 
   -- | resampler
@@ -73,6 +80,7 @@ resampleGeneric resampler pop = fromWeightedList $ do
       pure particles
 
 ||| Systematic sampler.
+export
 systematic : {n : Nat} -> Double -> Vect n Double -> List (Fin n)
 systematic {n = Z}   u Nil = Nil
 systematic {n = S k} u (p :: ps) =
@@ -101,6 +109,7 @@ systematic {n = S k} u (p :: ps) =
 
 ||| Resample the population using the underlying monad and a systematic resampling scheme.
 ||| The total weight is preserved.
+export
 resampleSystematic :
   (MonadSample m) =>
   Population m a ->
@@ -110,11 +119,13 @@ resampleSystematic = resampleGeneric (\ps => (`systematic` ps) <$> random)
 ||| Multinomial sampler.  Sample from \(0, \ldots, n - 1\) \(n\)
 ||| times drawn at random according to the weights where \(n\) is the
 ||| length of vector of weights.
+export
 multinomial : MonadSample m => {n : Nat} -> Vect n Double -> m (List (Fin n))
 multinomial ps = sequence $ replicate n (categorical ps)
 
 ||| Resample the population using the underlying monad and a multinomial resampling scheme.
 ||| The total weight is preserved.
+export
 resampleMultinomial :
   (MonadSample m) =>
   Population m a ->
@@ -123,6 +134,7 @@ resampleMultinomial = resampleGeneric multinomial
 
 ||| Separate the sum of weights into the 'Weighted' transformer.
 ||| Weights are normalized after this operation.
+export
 extractEvidence :
   Monad m =>
   Population m a ->
@@ -137,6 +149,7 @@ extractEvidence pop = fromWeightedList $ do
 
 ||| Push the evidence estimator as a score to the transformed monad.
 ||| Weights are normalized after this operation.
+export
 pushEvidence :
   MonadCond m =>
   Population m a ->
@@ -145,6 +158,7 @@ pushEvidence = hoist applyWeight . extractEvidence
 
 ||| A properly weighted single sample, that is one picked at random according
 ||| to the weights, with the sum of all weights.
+export
 proper :
   (MonadSample m) =>
   Population m a ->
@@ -156,11 +170,13 @@ proper pop = do
   pure (index idx xs_vec)
 
 ||| Model evidence estimator, also known as pseudo-marginal likelihood.
+export
 evidence : (Monad m) => Population m a -> m (Log Double)
 evidence = extractWeight . runPopulation . extractEvidence
 
 ||| Picks one point from the population and uses model evidence as a 'score' in the transformed monad.
 ||| This way a single sample can be selected from a population without introducing bias.
+export
 collapse :
   (MonadInfer m) =>
   Population m a ->
@@ -168,6 +184,7 @@ collapse :
 collapse = applyWeight . proper
 
 ||| Applies a random transformation to a population.
+export
 mapPopulation :
   (Monad m) =>
   (List (Log Double, a) -> m (List (Log Double, a))) ->
@@ -177,10 +194,12 @@ mapPopulation f m = fromWeightedList $ runPopulation m >>= f
 
 ||| Normalizes the weights in the population so that their sum is 1.
 ||| This transformation introduces bias.
+export
 normalize : Monad m => Population m a -> Population m a
 normalize pop = hoist {m1 = Weighted m} {m2 = m} prior (extractEvidence pop)
 
 ||| Population average of a function, computed using unnormalized weights.
+export
 popAvg : (Monad m) => (a -> Double) -> Population m a -> m Double
 popAvg f p = do
   xs <- explicitPopulation p
@@ -188,6 +207,7 @@ popAvg f p = do
   pure (Prelude.sum ys)
 
 ||| Combine a population of populations into a single population.
+export
 flatten : Monad m => Population (Population m) a -> Population m a
 flatten nestedPop = withWeight $ MkListT t
   where
