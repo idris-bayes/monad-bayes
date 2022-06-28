@@ -1,28 +1,29 @@
 module Control.Monad.Bayes.Sequential
 
+public export
+data Lift : (m : Type -> Type) -> Type -> Type where
+  MkLift : m a -> Lift m a
 
--- data Seq : (m : Type -> Type) -> (a : Type) -> Type where 
---   MkSeq : m (Either a (Seq m a)) -> Seq m a
+-- | 
+public export
+data Seq : (m : Type -> Type) -> (a : Type) -> Type where
+  L : a -> Seq m a
+  R : (op : Lift m x) -> (k : x -> Seq m a) -> Seq m a
 
--- runSeq : Seq m a -> m (Either a (Seq m a))
--- runSeq (MkSeq m) = assert_total m
+export
+implementation Functor (Seq m) where
+  map f (L a)    = L (f a)
+  map f (R op k) = R op (map f . k)
 
--- Functor m => Functor (Seq m) where
---   map h (MkSeq m) = MkSeq $ map (\case (Left  l) => Left (h l) 
---                                        (Right r) => Right (map h r)) m
+export
+implementation Applicative (Seq m) where
+  pure = L
+  R op k <*> p = R op (\x => k x <*> p) 
+  L f    <*> p = map f p
 
--- liftA2 : Applicative f => (a -> b -> c) -> f a -> f b -> f c
--- liftA2 f fa = (<*>) (map f fa)
+export
+implementation Monad (Seq es) where
+  R op k >>= f = R op ( assert_total (>>= f) . k)
+  L x   >>= f  = f x
 
--- Applicative m => Applicative (Seq m) where
---   pure x                    = MkSeq (pure (Left x))
---   (MkSeq mf) <*> (MkSeq ma) = ?todo
-
--- Monad m => Monad (Seq m) where
---   (>>=) (MkSeq mx) f = assert_total $ MkSeq $ do
---     x <- mx
---     case x of
---       Left l    => runSeq (f l) 
---       Right seq => pure (Right (seq >>= f))
-
---   -- join m = ?t
+-- runSeq : S
