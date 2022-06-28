@@ -10,7 +10,6 @@ import public Data.List
 import public Data.Vect
 import System.Random
 
---import Control.Monad.Trans.Identity
 import public Statistics.Distribution.Uniform
 import public Statistics.Distribution.Normal
 --import Statistics.Distribution.Binomial
@@ -18,15 +17,11 @@ import public Statistics.Distribution.Normal
 import public Numeric.Log
 
 %default total
--- TODO: implement more distributions
+
 public export
 interface Monad m => MonadSample m where
   ||| Must return in Uniform(0,1)
   random : m Double
-
-  ||| Bern(p)
-  bernoulli : (p : Double) -> m Bool
-  bernoulli p = map (< p) random
 
   ||| Uniform(min, max)
   uniform : (min, max : Double) -> m Double
@@ -39,15 +34,9 @@ interface Monad m => MonadSample m where
          r2 <- random
          pure $ Normal.normal m s r1 r2
 
-  ||| B(n, p)
-  binomial : (n : Nat) -> (p : Double) -> m Nat
-  binomial n p = (pure . length . List.filter (== True)) !(sequence . replicate n $ bernoulli p)
+  ||| gamma : (shape, scale : Double) -> m Double
 
-  ||| DiscUniform(range); should return Nat from 0 to (range - 1)
-  discreteUniform : (range : Nat) -> m Nat
-  discreteUniform range = do
-        r <- random
-        pure $ cast (floor (cast range * r))
+  ||| beta : (alpha, beta : Double) -> m Double
 
   ||| Categorical(ps)
   categorical : Vect n Double -> m (Fin n)
@@ -64,6 +53,28 @@ interface Monad m => MonadSample m where
   logCategorical logps = do
     let ps = map (exp . ln) logps
     categorical ps
+
+  ||| uniformD : List a -> m a
+
+  ||| geometric : Double -> m Int
+
+  ||| poisson : Double -> m Int
+
+  ||| dirichlet : Vect n Double -> m (Vect n Double)
+
+  ||| Bern(p)
+  bernoulli : (p : Double) -> m Bool
+  bernoulli p = map (< p) random
+
+  ||| B(n, p)
+  binomial : (n : Nat) -> (p : Double) -> m Nat
+  binomial n p = (pure . length . List.filter (== True)) !(sequence . replicate n $ bernoulli p)
+
+  ||| DiscUniform(range); should return Nat from 0 to (range - 1)
+  discreteUniform : (range : Nat) -> m Nat
+  discreteUniform range = do
+        r <- random
+        pure $ cast (floor (cast range * r))
 
 public export
 interface Monad m => MonadCond m where
