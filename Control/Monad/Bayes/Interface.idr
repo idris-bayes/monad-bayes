@@ -78,41 +78,58 @@ public export
 interface (MonadSample m, MonadCond m) => MonadInfer m where
 
 -- MaybeT
+export
 MonadSample m => MonadSample (MaybeT m) where
   random = lift random
---  bernoulli = lift . bernoulli
+  bernoulli = lift . bernoulli
+export
 MonadCond m => MonadCond (MaybeT m) where
   score = lift . score
+export
 MonadInfer m => MonadInfer (MaybeT m) where
 
 -- ReaderT
+export
 MonadSample m => MonadSample (ReaderT r m) where
   random = lift random
   bernoulli = lift . bernoulli
+export
 MonadCond m => MonadCond (ReaderT r m) where
   score = lift . score
+export
 MonadInfer m => MonadInfer (ReaderT r m) where
 
 -- WriterT
+export
 MonadSample m => MonadSample (WriterT w m) where
   random = lift random
   bernoulli = lift . bernoulli
+  categorical = lift . categorical
+export
 MonadCond m => MonadCond (WriterT w m) where
   score = lift . score
+export
 MonadInfer m => MonadInfer (WriterT w m) where
 
 -- StateT
+export
 MonadSample m => MonadSample (StateT s m) where
   random = lift random
   bernoulli = lift . bernoulli
+  categorical = lift . categorical
+export
 MonadCond m => MonadCond (StateT s m) where
   score = lift . score
+export
 MonadInfer m => MonadInfer (StateT s m) where
 
 -- RWST
+export
 MonadSample m => MonadSample (RWST r w s m) where
   random = lift random
   bernoulli = lift . bernoulli
+export
 MonadCond m => MonadCond (RWST r w s m) where
   score = lift . score
+export
 MonadInfer m => MonadInfer (RWST r w s m) where

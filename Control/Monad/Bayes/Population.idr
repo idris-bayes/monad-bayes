@@ -31,30 +31,57 @@ export
 MonadTrans ListT where
   lift = MkListT . map List.singleton
 
+export
+MonadSample m => MonadSample (ListT m) where
+  random = lift random
+  bernoulli = lift . bernoulli
+  categorical = lift . categorical
+
+export
+MonadCond m => MonadCond (ListT m) where
+  score = lift . score
+
+export
+MonadInfer m => MonadInfer (ListT m)
+
 ||| A collection of weighted samples, or particles.
 public export
-Population : (m : Type -> Type) -> (a : Type) -> Type
-Population m = Weighted (ListT m)
+record Population (m : Type -> Type) (a : Type) where
+  constructor MkPopulation
+  runPopulation' : Weighted (ListT m) a 
+
+export
+Functor m => Functor (Population m) where
+  map f (MkPopulation mx) = MkPopulation (map f mx) 
+
+export
+Monad m => Applicative (Population m) where
+  pure = MkPopulation . pure 
+  (MkPopulation mf) <*> (MkPopulation ma) = MkPopulation (mf <*> ma)
+
+export
+Monad m => Monad (Population m) where
+  (MkPopulation mx) >>= k = MkPopulation (mx >>= (runPopulation' . k))
 
 export
 MonadTrans Population where
-  lift = lift . lift
+  lift = MkPopulation . lift . lift
 
 export
 MonadSample m => MonadSample (Population m) where
-  random = (lift . lift) random
+  random = lift random
 
 export
 MonadCond m => MonadCond (Population m) where
-  score w = (lift . lift) (score w)
+  score = lift . score 
 
 export
-MonadSample m => MonadInfer (Population m) where
+MonadInfer m => MonadInfer (Population m) where
 
 ||| Explicit representation of the weighted sample with weights in the log domain.
 export
 runPopulation : Population m a -> m (List (Log Double, a))
-runPopulation = runListT . runWeighted
+runPopulation (MkPopulation m) = (runListT . runWeighted) m
 
 ||| Explicit representation of the weighted sample.
 export
@@ -64,7 +91,7 @@ explicitPopulation = map (map (\(log_p, a) => (exp (ln log_p), a))) . runPopulat
 ||| Initialize 'Population' with a concrete weighted sample.
 export
 fromWeightedList : Monad m => m (List (Log Double, a)) -> Population m a
-fromWeightedList = withWeight . MkListT
+fromWeightedList = MkPopulation . withWeight . MkListT
 
 ||| Applies a transformation to the inner monad.
 export
@@ -233,7 +260,7 @@ popAvg f p = do
 ||| Combine a population of populations into a single population.
 export
 flatten : Monad m => Population (Population m) a -> Population m a
-flatten nestedPop = withWeight $ MkListT t
+flatten nestedPop = MkPopulation $ withWeight $ MkListT t
   where
     f : List (Log Double, List (Log Double, a)) -> List (Log Double, a)
     f d = do

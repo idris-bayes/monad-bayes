@@ -11,24 +11,42 @@ import public Numeric.Log
 
 ||| Execute the program using the prior distribution, while accumulating likelihood.
 public export
-Weighted : (m : Type -> Type) -> (a : Type) -> Type
-Weighted m = StateT (Log Double) m
+record Weighted (m : Type -> Type) (a : Type) where
+  constructor MkWeighted
+  runWeighted' : StateT (Log Double) m a 
 
+||| Obtain an explicit value of the likelihood for a given value
 public export
+runWeighted : Weighted m a -> m (Log Double, a)
+runWeighted (MkWeighted m) = runStateT 1 m 
+
+export
+MonadTrans Weighted where
+  lift = MkWeighted . lift
+
+export
+Functor m => Functor (Weighted m) where
+  map f (MkWeighted s) =  (MkWeighted $ map f s) 
+
+export
+Monad m => Applicative (Weighted m) where
+  pure x = MkWeighted (pure x)
+  (MkWeighted mf) <*> (MkWeighted ma) = MkWeighted (mf <*> ma) 
+  
+export
+Monad m => Monad (Weighted m) where
+  (MkWeighted mx) >>= k = MkWeighted (mx >>= (runWeighted' . k))
+
+export
 MonadSample m => MonadSample (Weighted m) where
   random = lift random
 
 export
 Monad m => MonadCond (Weighted m) where
-  score w = ST $ \st => pure (w * st, ())
+  score w = MkWeighted (modify (* w))
 
 export
 MonadSample m => MonadInfer (Weighted m) where
-
-||| Obtain an explicit value of the likelihood for a given value
-export
-runWeighted : Weighted m a -> m (Log Double, a)
-runWeighted = runStateT 1
 
 ||| Compute the sample and discard the weight.
 ||| This operation introduces bias.
@@ -44,9 +62,9 @@ extractWeight = map fst . runWeighted
 ||| Embed a random variable with explicitly given likelihood
 export
 withWeight : Monad m => m (Log Double, a) -> Weighted m a
-withWeight m = do
+withWeight m = MkWeighted $ do
   (w, x) <- lift m
-  get >>= (put . (w *))
+  modify (* w)
   pure x
 
 ||| Combine weights from two different levels.
@@ -65,4 +83,4 @@ applyWeight m = do
 ||| Apply a transformation to the transformed monad.
 export
 hoist : (forall x. m x -> n x) -> Weighted m a -> Weighted n a
-hoist phi w = mapStateT phi w
+hoist phi (MkWeighted w) =  MkWeighted $ mapStateT phi w

@@ -7,8 +7,6 @@ import Control.Monad.Writer
 
 import Control.Monad.Bayes.Interface
 import Control.Monad.Free
-import Control.Monad.Free.Church
---import Control.Monad.Trans.Free
 import public Control.Monad.Trans.Free.Church
 
 ||| Random sampling functor
@@ -25,13 +23,16 @@ public export
 FreeSampler : (m : Type -> Type) -> (a : Type) -> Type
 FreeSampler = FT SamF
 
---record FreeSampler m a where
-  --constructor MkFreeSampler
-  --runFreeSampler : FT SamF m a
+{-
+TODO: check if this is needed, since we're just aliasing FT
 
--- TODO: check if this is needed, since we're just aliasing FT
---{m : _} -> Monad m => MonadFree SamF (FreeSampler m) where
-  --wrap (Random x) = MkFT $ ?a
+record FreeSampler m a where
+  constructor MkFreeSampler
+  runFreeSampler : FT SamF m a
+
+{m : _} -> Monad m => MonadFree SamF (FreeSampler m) where
+  wrap (Random x) = MkFT $ ?a
+-}
 
 export
 (Monad m, MonadFree SamF (FreeSampler m)) => MonadSample (FreeSampler m) where
