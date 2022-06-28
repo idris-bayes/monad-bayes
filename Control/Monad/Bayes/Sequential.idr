@@ -56,15 +56,18 @@ finished : Monad m => Sequential m a -> m Bool
 finished (L a) = pure True
 finished   _   = pure False
 
+export
 MonadSample m => MonadSample (Sequential m) where
   random      = lift random
   bernoulli   = lift . bernoulli
   categorical = lift . categorical
 
 ||| Execution is 'suspend'ed after each 'score'.
+export
 MonadCond m => MonadCond (Sequential m) where
   score w = lift (score w) >> suspend
 
+export
 MonadInfer m => MonadInfer (Sequential m)
 
 ||| Transform the inner monad.

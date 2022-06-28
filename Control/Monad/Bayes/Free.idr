@@ -81,5 +81,5 @@ withPartialRandomness randomness k =
 
 ||| Like `withPartialRandomness`, but use an arbitrary sampling monad.
 public export
-runWith : {m : _} -> MonadSample m => List Double -> FreeSampler Identity a -> m (a, List Double)
+runWith : MonadSample m => List Double -> FreeSampler Identity a -> m (a, List Double)
 runWith randomness = withPartialRandomness randomness . hoist {n=m} (pure . runIdentity)

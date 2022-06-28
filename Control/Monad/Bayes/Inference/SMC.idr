@@ -1,8 +1,8 @@
 module Control.Monad.Bayes.Inference.SMC
 
 import Control.Monad.Bayes.Interface
-import Control.Monad.Bayes.Population
-import Control.Monad.Bayes.Sequential
+import public Control.Monad.Bayes.Population
+import public Control.Monad.Bayes.Sequential
 import Control.Monad.Bayes.Weighted
 
 ||| Sequential importance resampling.
