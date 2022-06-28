@@ -10,6 +10,7 @@ modules = Control.Monad.Bayes.Interface
         , Control.Monad.Bayes.Sequential
         , Control.Monad.Bayes.Traced.Basic
         , Control.Monad.Bayes.Traced.Common
+        , Control.Monad.Bayes.Traced.Dynamic
         , Control.Monad.Bayes.Traced.Static
         , Control.Monad.Bayes.Inference.SMC
         , Control.Monad.Bayes.Examples.LinRegr
