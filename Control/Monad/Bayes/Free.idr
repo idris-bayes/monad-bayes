@@ -39,7 +39,7 @@ export
 
 ||| Hoist 'FreeSampler' through a monad transform.
 export
-hoist : {n : _} -> (Monad m, Monad n) => (forall x. m x -> n x) -> FreeSampler m a -> FreeSampler n a
+hoist : (Monad m, Monad n) => (forall x. m x -> n x) -> FreeSampler m a -> FreeSampler n a
 hoist f m = hoistFT f m
 
 ||| Execute random sampling in the transformed monad.

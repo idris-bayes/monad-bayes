@@ -37,11 +37,11 @@ Monad Trace where
     let t' = f (t.output)
     in  {variables := variables t ++ variables t', density := density t * density t'} t' 
 
-public export
+export
 singleton : Double -> Trace Double
 singleton u = MkTrace {variables = [u], output = u, density = 1}
 
-public export
+export
 scored : Log Double
       -> Trace ()
 scored w = MkTrace {variables = [], output = (), density = w}
@@ -53,7 +53,8 @@ bind dx f = do
   t2 <- f (output t1)
   pure $ {variables := variables t1 ++ variables t2, density := density t1 * density t2} t2
 
-public export
+||| A single Metropolis-corrected transition of single-site Trace MCMC.
+export
 mhTrans : MonadSample m => Weighted (FreeSampler m) a -> Trace a -> m (Trace a)
 mhTrans mw t@(MkTrace {variables = us, output = x, density = p}) = do
   let n = length us -- need to ensure n >= 1
@@ -67,3 +68,9 @@ mhTrans mw t@(MkTrace {variables = us, output = x, density = p}) = do
   let ratio : Double = (exp . ln) $ min 1 (q * (cast n) / (p * cast (length vs)))
   accept <- bernoulli ratio
   pure $ if accept then MkTrace vs b q else t
+
+
+||| A variant of 'mhTrans' with an external sampling monad.
+export
+mhTrans' : MonadSample m => Weighted (FreeSampler Identity) a -> Trace a -> m (Trace a)
+mhTrans' m = mhTrans (Weighted.hoist (Free.hoist (pure . runIdentity)) m)
