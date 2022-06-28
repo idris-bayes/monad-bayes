@@ -2,6 +2,7 @@ module Control.Monad.Bayes.Population
 
 import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Interface
+import Control.Monad.Trans
 import Data.List
 
 public export
@@ -9,23 +10,34 @@ record ListT (m : Type -> Type) (a : Type) where
   constructor MkListT 
   runListT : m (List a)
 
+export
 Functor m => Functor (ListT m) where
   map f (MkListT mas) = MkListT (map (map f) mas) 
 
+export
 Applicative m => Applicative (ListT m) where
   pure x = MkListT (pure [x])
   (MkListT mf) <*> (MkListT mx) = MkListT ((map (<*>) mf) <*> mx) 
 
+export
 Monad m => Monad (ListT m) where
   (MkListT mas) >>= f = MkListT $ do
     as <- mas
     bss <- sequence (map (runListT . f) as)
     pure (concat bss)
 
-||| A collection of weighted samples, or particles.
 export
+MonadTrans ListT where
+  lift = MkListT . map List.singleton
+
+||| A collection of weighted samples, or particles.
+public export
 Population : (m : Type -> Type) -> (a : Type) -> Type
 Population m = Weighted (ListT m)
+
+export
+MonadTrans Population where
+  lift = lift . lift
 
 ||| Explicit representation of the weighted sample with weights in the log domain.
 export
@@ -55,7 +67,7 @@ hoist f = fromWeightedList . f . runPopulation
 ||| The weights are adjusted such that their sum is preserved. It is therefore 
 ||| safe to use 'spawn' in arbitrary places in the program without introducing bias.
 export
-spawn : Monad m => Nat -> Population m ()
+spawn : (isMonad : Monad m) => Nat -> Population m ()
 spawn n = fromWeightedList $ pure $ replicate n (Exp (1.0 / the (Double) (cast n)), ()) 
 
 export

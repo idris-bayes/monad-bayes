@@ -7,6 +7,8 @@ modules = Control.Monad.Bayes.Interface
         , Control.Monad.Bayes.Weighted
         , Control.Monad.Bayes.Population
         , Control.Monad.Bayes.Sampler
+        , Control.Monad.Bayes.Sequential
         , Control.Monad.Bayes.Traced.Common
         , Control.Monad.Bayes.Traced.Static
+        , Control.Monad.Bayes.Inference.SMC
         , Control.Monad.Bayes.Examples.LinRegr
