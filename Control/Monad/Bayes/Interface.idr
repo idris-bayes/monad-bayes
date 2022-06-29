@@ -12,11 +12,15 @@ import System.Random
 
 import public Statistics.Distribution.Uniform
 import public Statistics.Distribution.Normal
---import Statistics.Distribution.Binomial
+import public Statistics.Distribution.Beta
+import public Statistics.Distribution.Gamma
 
 import public Numeric.Log
 
 %default total
+
+-- draw : Double -> m Double
+-- draw 
 
 public export
 interface Monad m => MonadSample m where
@@ -25,25 +29,25 @@ interface Monad m => MonadSample m where
 
   ||| Uniform(min, max)
   uniform : (min, max : Double) -> m Double
-  uniform min max = map (Uniform.uniform min max) random
+  uniform min max = map (Uniform.uniform_cdf_inv min max) random
 
   ||| N(mean, sd)
   normal : (mean, sd : Double) -> m Double
-  normal m s = do
-         r1 <- random
-         r2 <- random
-         pure $ Normal.normal m s r1 r2
+  normal m s      = map (Normal.normal_cdf_inv m s) random
 
   ||| gamma : (shape, scale : Double) -> m Double
+  gamma : (a, b : Double) -> m Double
+  gamma a b       = map (Gamma.gamma_cdf_inv a b) random
 
   ||| beta : (alpha, beta : Double) -> m Double
+  beta : (a, b : Double) -> m Double
+  beta a b        = map (Beta.beta_cdf_inv a b) random
 
   ||| Categorical(ps)
   categorical : Vect n Double -> m (Fin n)
   categorical ps = do
     r <- random
-    let total_ps = sum ps 
-        normalised_ps = map (/total_ps) ps 
+    let normalised_ps = map (/(sum ps)) ps 
     case findIndex (>= r) normalised_ps of
       Just i  => pure i
       Nothing => assert_total $ idris_crash "categorical: bad weights!"

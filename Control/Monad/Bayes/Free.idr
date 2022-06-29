@@ -23,17 +23,6 @@ public export
 FreeSampler : (m : Type -> Type) -> (a : Type) -> Type
 FreeSampler = FT SamF
 
-{-
-TODO: check if this is needed, since we're just aliasing FT
-
-record FreeSampler m a where
-  constructor MkFreeSampler
-  runFreeSampler : FT SamF m a
-
-{m : _} -> Monad m => MonadFree SamF (FreeSampler m) where
-  wrap (Random x) = MkFT $ ?a
--}
-
 export
 (Monad m, MonadFree SamF (FreeSampler m)) => MonadSample (FreeSampler m) where
   random = liftF $ Random id
