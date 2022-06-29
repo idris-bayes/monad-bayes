@@ -6,6 +6,7 @@ import Control.Monad.Bayes.Interface
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Traced.Static
+import Control.Monad.Bayes.Inference.SMC
 import Statistics.Distribution.Normal
 import Numeric.Log
 
@@ -52,4 +53,12 @@ mhLinRegr n_samples n_datapoints = do
   let linRegrData : Nat -> List (Double, Double)
       linRegrData n_datapoints = zip (map cast [0 ..  n_datapoints]) (map (*3) (map cast [0 ..  n_datapoints]))
   param_trace <- sampleIO $ prior $ mh n_samples (linRegr_inf Nothing Nothing Nothing (linRegrData n_datapoints))
+  print param_trace >> pure param_trace
+
+||| Perform SMC inference over linear regression model parameters, `m`, `c`, `s`
+smcLinRegr : (n_samples : Nat) -> (n_timesteps : Nat) -> Nat -> IO (List (Log Double, LinRegrParams) )
+smcLinRegr n_samples n_timesteps n_datapoints = do
+  let linRegrData : Nat -> List (Double, Double)
+      linRegrData n_datapoints = zip (map cast [0 ..  n_datapoints]) (map (*3) (map cast [0 ..  n_datapoints]))
+  param_trace <- sampleIO $ runPopulation $ smcSystematic n_samples n_timesteps (linRegr_inf Nothing Nothing Nothing (linRegrData n_datapoints))
   print param_trace >> pure param_trace

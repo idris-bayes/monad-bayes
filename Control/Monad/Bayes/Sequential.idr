@@ -57,7 +57,7 @@ MonadCond m => MonadCond (Sequential m) where
   score w = lift (score w) >> suspend
 
 export
-MonadInfer m => MonadInfer (Sequential m)
+MonadInfer m => MonadInfer (Sequential m) where
 
 ||| Transform the inner monad.
 -- This operation only applies to computation up to the first suspension.

@@ -76,7 +76,7 @@ Monad m => MonadCond (Population m) where
   score w = MkPopulation $ score w -- Call score from Weighted
 
 export
-MonadInfer m => MonadInfer (Population m) where
+MonadSample m => MonadInfer (Population m) where
 
 ||| Explicit representation of the weighted sample with weights in the log domain.
 export
