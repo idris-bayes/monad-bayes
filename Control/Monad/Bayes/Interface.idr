@@ -51,16 +51,22 @@ interface Monad m => MonadSample m where
   binomial n p = (pure . length . List.filter (== True)) !(sequence . replicate n $ bernoulli p)
 
   ||| Categorical(probs)
-  categorical : Vect n Double -> m (Fin n)
+  categorical : {n : Nat} -> Vect n Double -> m (Fin n)
   categorical ps = do
     r <- random
     let normalised_ps = map (/(sum ps)) ps 
-    case findIndex (>= r) normalised_ps of
+
+        cmf : Double -> Nat -> List Double -> Maybe (Fin n)
+        cmf acc idx (x :: xs) = let acc' = acc + x 
+                                in  if acc' > r then natToFin idx n else cmf acc' (S idx) xs
+        cmf acc idx []        = Nothing
+
+    case cmf 0 0 (toList normalised_ps) of
       Just i  => pure i
-      Nothing => assert_total $ idris_crash "categorical: bad weights!"
+      Nothing => assert_total $ idris_crash $ "categorical: bad weights!" ++ show ps
 
   ||| Log-categorical(log-probs)
-  logCategorical : Vect n (Log Double) -> m (Fin n)
+  logCategorical : {n : _} -> Vect n (Log Double) -> m (Fin n)
   logCategorical logps = categorical (map (exp . ln) logps)
 
   ||| Uniform-Discrete(values)
