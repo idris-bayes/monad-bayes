@@ -12,21 +12,24 @@ record ListT (m : Type -> Type) (a : Type) where
   constructor MkListT 
   runListT : m (List a)
 
+mapListT : (m (List a) -> n (List b)) -> ListT m a -> ListT n b
+mapListT f m = MkListT $ f (runListT m)
+
 export
 Functor m => Functor (ListT m) where
-  map f (MkListT mas) = MkListT (map (map f) mas) 
+  map f  = mapListT $ map $ map f 
 
 export
 Applicative m => Applicative (ListT m) where
-  pure x = MkListT (pure [x])
-  (MkListT mf) <*> (MkListT mx) = MkListT ((map (<*>) mf) <*> mx) 
+  pure x  = MkListT (pure [x])
+  f <*> v = MkListT $ (<*>) <$> runListT f <*> runListT v
 
 export
 Monad m => Monad (ListT m) where
-  (MkListT mas) >>= f = MkListT $ do
-    as <- mas
-    bss <- sequence (map (runListT . f) as)
-    pure (concat bss)
+  m >>= k  = MkListT $ do
+    a <- runListT m
+    b <- (sequence . map (runListT . k))  a
+    pure (join b)
 
 export
 MonadTrans ListT where
@@ -130,7 +133,7 @@ resampleGeneric resampler pop = fromWeightedList $ do
       ancestors <- resampler weights
       let offsprings = map (\idx => index idx xs) ancestors
           k = map (z / cast n, ) offsprings
-      (pure k)
+      Trace.trace ("resampleGeneric: number of offsprings is " ++ show (length k)) (pure k)
     else
       (pure particles) 
 
@@ -147,14 +150,6 @@ systematic {n = S k} u (p :: ps) =
           inc : Double
           inc = 1 / cast (S k)
 
-          bounded_succ : {x : Nat} -> Fin x -> Fin x
-          bounded_succ k = case strengthen (FS k) of Just sx => sx
-                                                     Nothing => k
-
-          bounded_unsucc : Fin x -> Fin x
-          bounded_unsucc FZ = FZ
-          bounded_unsucc (FS k) = weaken k
-
           f : Nat -> Double -> Nat -> Double -> List Nat -> List Nat
           f i v j q acc = 
             if i == S k then acc else
@@ -162,10 +157,11 @@ systematic {n = S k} u (p :: ps) =
               then f (1 + i) (v + inc) j q ((minus j 1) :: acc)
               else f  i v (1 + j) (q + prob (natToFin j (S k))) acc
           
-          g : List (Fin (S k))
-          g = map (\nat => fromMaybe FZ (natToFin nat (S k))) (f Z (u / cast (S k)) Z 0.0 [])
+          particle_idxs : List (Fin (S k))
+          particle_idxs = map (\nat => fromMaybe FZ (natToFin nat (S k))) 
+                              (f Z (u / cast (S k)) Z 0.0 [])
           -- h =  (the Nat 5)
-  in      Trace.trace ("systematic resampler: resampled particle indexes are: " ++ show g) g
+  in      Trace.trace ("systematic resampler: resampled particle indexes are: " ++ show particle_idxs) particle_idxs
 
 ||| Resample the population using the underlying monad and a systematic resampling scheme.
 ||| The total weight is preserved.
@@ -252,12 +248,6 @@ mapPopulation :
   Population m a
 mapPopulation f m = fromWeightedList $ runPopulation m >>= f
 
-||| Normalizes the weights in the population so that their sum is 1.
-||| This transformation introduces bias.
-export
-normalize : Monad m => Population m a -> Population m a
-normalize pop = hoist {m1 = Weighted m} {m2 = m} prior (extractEvidence pop)
-
 ||| Population average of a function, computed using unnormalized weights.
 export
 popAvg : (Monad m) => (a -> Double) -> Population m a -> m Double
@@ -265,18 +255,3 @@ popAvg f p = do
   xs <- explicitPopulation p
   let ys = map (\(w, x) => f x * w) xs
   pure (Prelude.sum ys)
-
-||| Combine a population of populations into a single population.
-export
-flatten : Monad m => Population (Population m) a -> Population m a
-flatten nestedPop = MkPopulation $ withWeight $ MkListT t
-  where
-    f : List (Log Double, List (Log Double, a)) -> List (Log Double, a)
-    f d = do
-      (p, x) <- d
-      (q, y) <- x
-      pure (p * q, y)
-
-    t : m (List (Log Double, a))
-    t = f <$> (runPopulation . runPopulation) nestedPop
-
