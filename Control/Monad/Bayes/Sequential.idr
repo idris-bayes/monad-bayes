@@ -1,57 +1,50 @@
 module Control.Monad.Bayes.Sequential
 
-import Data.List
 import Control.Monad.Trans
 import Control.Monad.Bayes.Interface
-
-
-||| Represents a computation that can be suspended at certain points.
--- The intermediate monadic effects can be extracted, which is particularly
--- useful for implementation of Sequential Monte Carlo related methods.
--- All the probabilistic effects are lifted from the transformed monad, but
--- also `suspend` is inserted after each `factor`.
-public export
-data Sequential : (m : Type -> Type) -> (a : Type) -> Type where
-  L : a -> Sequential m a
-  R : (op : m x) -> (k : x -> Sequential m a) -> Sequential m a
+ 
+total
+export
+data Sequential : (m : Type -> Type) -> (a : Type) -> Type where 
+  MkSeq : Inf (m (Either a (Sequential m a))) -> Sequential m a
 
 export
-implementation Functor (Sequential m) where
-  map f (L a)    = L (f a)
-  map f (R op k) = R op (map f . k)
+runSeq : Sequential m a -> m (Either a (Sequential m a))
+runSeq (MkSeq m) = m
 
-export
-implementation Applicative (Sequential m) where
-  pure = L
-  R op k <*> p = R op (\x => k x <*> p) 
-  L f    <*> p = map f p
+mutual 
+  export
+  Monad m => Functor (Sequential m) where
+    map f (MkSeq mx) = MkSeq (do
+      x <- mx 
+      case x of Left l  => pure (Left $ f l)
+                Right r => pure (Right $ map f r))
+  export
+  Monad m => Applicative (Sequential m) where
+    pure x = MkSeq (pure (Left x))
+    mf <*> mv = do
+      f' <- mf
+      v' <- mv
+      pure $ f' v'
+  export
+  Monad m => Monad (Sequential m) where
+    (>>=) (MkSeq mx) f = MkSeq $ do
+      x <- mx
+      case x of
+        Left l    => runSeq (f l) 
+        Right seq => pure (Right ((assert_total (>>=)) seq  f))
 
-public export
-implementation Monad (Sequential m) where
-  R op k >>= f = R op (assert_total (>>= f) . k)
-  L x   >>= f  = f x
+  MonadTrans Sequential where
+    lift mx = MkSeq (map Left mx)
 
-export
-MonadTrans Sequential where
--- lift : Monad m => m a -> Sequential m a
-   lift mx = R mx (\x => L x) 
-
-||| A point where the computation is paused.
+  export
 suspend : Monad m => Sequential m ()
-suspend = lift (pure ())
-
-||| Remove the remaining suspension points.
-finish : Monad m => Sequential m a -> m a
-finish (L a) = pure a
-finish (R mx k) = mx >>= (finish . k)
+suspend = MkSeq (pure (Right (pure ())))
 
 export
 MonadSample m => MonadSample (Sequential m) where
-  random      = lift random
-  bernoulli   = lift . bernoulli
-  categorical = lift . categorical
+  random = lift random
 
-||| Execution is 'suspend'ed after each 'score'.
 export
 MonadCond m => MonadCond (Sequential m) where
   score w = lift (score w) >> suspend
@@ -59,35 +52,29 @@ MonadCond m => MonadCond (Sequential m) where
 export
 MonadInfer m => MonadInfer (Sequential m) where
 
-||| Transform the inner monad.
--- This operation only applies to computation up to the first suspension.
 export
-hoistFirst : Monad m => (forall x. m x -> m x) -> Sequential m a -> Sequential m a
-hoistFirst f (L a)    = L a 
-hoistFirst f (R mx k) = R (f mx) k
+advance : Monad m => Sequential m a -> Sequential m a
+advance (MkSeq m) = MkSeq (m >>= either ( pure . Left ) runSeq )
 
-||| Transform the inner monad.
--- The transformation is applied recursively through all the suspension points.
 export
-hoist : (Monad m, Monad n) => (forall x. m x -> n x) -> Sequential m a -> Sequential n a
-hoist f (L a) = (L a)  
-hoist f (R mx k) = R (f mx) (hoist f . k)
+finish : Monad m => Sequential m a -> m a
+finish (MkSeq m) = (m >>= either pure finish)
 
-||| Apply a function a given number of times.
 export
+hoistFirst : (forall x. m x -> m x) -> Sequential m a -> Sequential m a
+hoistFirst tau (MkSeq m) = MkSeq (tau m)
+
+-- | Apply a function a given number of times.
 composeCopies : Nat -> (a -> a) -> (a -> a)
 composeCopies k f = foldr (.) id (List.replicate k f)
 
-||| Sequential importance sampling.
--- Applies a given transformation after each time step.
 export
-sis : Monad m
-  => (forall x. m x -> m x)   -- | Transformation
-  -> (k : Nat)                -- | Number of time steps
-  -> Sequential m a
-  -> m a
-sis f Z     seq = finish seq
-sis f (S n) seq with (hoistFirst f seq)
-  _ | (R op k) = do x <- op
-                    sis f n (k x)
-  _ | (L x)    = pure x
+sis :
+  Monad m =>
+  -- | transformation
+  (forall x. m x -> m x) ->
+  -- | number of time steps
+  Nat ->
+  Sequential m a ->
+  m a
+sis f k = finish . composeCopies k (advance . hoistFirst f)
