@@ -132,8 +132,8 @@ resampleGeneric resampler pop = fromWeightedList $ do
       
       ancestors <- resampler weights
       let offsprings = map (\idx => index idx xs) ancestors
-          k = map (z / cast n, ) offsprings
-      Trace.trace ("resampleGeneric: number of offsprings is " ++ show (length k)) (pure k)
+          j = map (z / cast n, ) offsprings
+      Trace.trace ("resampleGeneric: number of offsprings is " ++ show (length j)) (pure j)
     else
       (pure particles) 
 
