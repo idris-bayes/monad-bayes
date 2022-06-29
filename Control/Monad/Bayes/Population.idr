@@ -119,7 +119,7 @@ resampleGeneric :
   Population m a
 resampleGeneric resampler pop = fromWeightedList $ do
   particles <- runPopulation pop
-  Trace.trace ("particles is result is: " ++ show (length particles)) (pure ())
+  Trace.trace ("resampleGeneric: number of particles is " ++ show (length particles)) (pure ())
   let (log_ps, xs) : (Vect (length particles) (Log Double), Vect (length particles) a) = unzip (fromList particles)
       n = length xs
       z = Numeric.Log.sum log_ps
@@ -139,7 +139,7 @@ export
 systematic : {n : Nat} -> Double -> Vect n Double -> List (Fin n)
 systematic {n = Z}   u Nil = Nil
 systematic {n = S k} u (p :: ps) =
-  let     w = Trace.trace ("system weights are: " ++ show (p :: ps)) 5
+  let     w = Trace.trace ("systematic resampler: initial particle weights are " ++ show (p :: ps)) 5
           prob : Fin (S k) -> Double
           prob idx = index idx (p :: ps)
 
@@ -154,17 +154,17 @@ systematic {n = S k} u (p :: ps) =
           bounded_unsucc FZ = FZ
           bounded_unsucc (FS k) = weaken k
 
-          f : Nat -> Fin (S k) -> Double -> Fin (S k) -> Double -> List (Fin (S k)) -> List (Fin (S k))
-          f counter i v j q acc = 
-            if counter == S k then acc else
+          f : Nat -> Double -> Fin (S k) -> Double -> List (Fin (S k)) -> List (Fin (S k))
+          f i v j q acc = 
+            if i == S k then acc else
             if v < q
-              then f (counter + 1) (bounded_succ i) (v + inc) j q (bounded_unsucc j :: acc)
-              else f counter i v (bounded_succ j) (q + prob j) acc
+              then f (1 + i) (v + inc) j q (bounded_unsucc j :: acc)
+              else f  i v (bounded_succ j) (q + prob j) acc
           
           g : List (Fin (S k))
-          g = f Z FZ (u / cast (S k)) FZ 0.0 []
+          g = f Z (u / cast (S k)) FZ 0.0 []
           -- h =  (the Nat 5)
-  in      Trace.trace ("systematic result is: " ++ show g) g
+  in      Trace.trace ("systematic resampler: resampled particle indexes are: " ++ show (u / cast (S k))) g
 
 ||| Resample the population using the underlying monad and a systematic resampling scheme.
 ||| The total weight is preserved.
