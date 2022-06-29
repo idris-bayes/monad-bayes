@@ -14,36 +14,43 @@ import public Statistics.Distribution.Uniform
 import public Statistics.Distribution.Normal
 import public Statistics.Distribution.Beta
 import public Statistics.Distribution.Gamma
+import public Statistics.Distribution.Geometric
+import public Statistics.Distribution.Poisson
 
 import public Numeric.Log
 
 %default total
 
--- draw : Double -> m Double
--- draw 
-
 public export
 interface Monad m => MonadSample m where
-  ||| Must return in Uniform(0,1)
+  ||| Draws a random value from Uniform(0,1)
   random : m Double
 
   ||| Uniform(min, max)
   uniform : (min, max : Double) -> m Double
   uniform min max = map (Uniform.uniform_cdf_inv min max) random
 
-  ||| N(mean, sd)
+  ||| Normal(mean, sd)
   normal : (mean, sd : Double) -> m Double
   normal m s      = map (Normal.normal_cdf_inv m s) random
 
-  ||| gamma : (shape, scale : Double) -> m Double
+  ||| Gamma : (shape, scale : Double) -> m Double
   gamma : (a, b : Double) -> m Double
   gamma a b       = map (Gamma.gamma_cdf_inv a b) random
 
-  ||| beta : (alpha, beta : Double) -> m Double
+  ||| Beta : (alpha, beta : Double) -> m Double
   beta : (a, b : Double) -> m Double
   beta a b        = map (Beta.beta_cdf_inv a b) random
 
-  ||| Categorical(ps)
+  ||| Bernoulli(prob)
+  bernoulli : (p : Double) -> m Bool
+  bernoulli p     = map (< p) random
+
+  ||| Binomial(num trials, prob of each trial)
+  binomial : (n : Nat) -> (p : Double) -> m Nat
+  binomial n p = (pure . length . List.filter (== True)) !(sequence . replicate n $ bernoulli p)
+
+  ||| Categorical(probs)
   categorical : Vect n Double -> m (Fin n)
   categorical ps = do
     r <- random
@@ -52,33 +59,49 @@ interface Monad m => MonadSample m where
       Just i  => pure i
       Nothing => assert_total $ idris_crash "categorical: bad weights!"
 
-  ||| Log-categorical(log-ps)
+  ||| Log-categorical(log-probs)
   logCategorical : Vect n (Log Double) -> m (Fin n)
-  logCategorical logps = do
-    let ps = map (exp . ln) logps
-    categorical ps
+  logCategorical logps = categorical (map (exp . ln) logps)
 
-  ||| uniformD : List a -> m a
+  ||| Uniform-Discrete(values)
+  uniformD : {n : Nat} -> Vect (S n) a -> m a
+  uniformD xs = do
+    idx <- categorical $ replicate (S n) (1 / cast n)
+    pure (index idx xs)
 
-  ||| geometric : Double -> m Int
-
-  ||| poisson : Double -> m Int
-
-  ||| dirichlet : Vect n Double -> m (Vect n Double)
-
-  ||| Bern(p)
-  bernoulli : (p : Double) -> m Bool
-  bernoulli p = map (< p) random
-
-  ||| B(n, p)
-  binomial : (n : Nat) -> (p : Double) -> m Nat
-  binomial n p = (pure . length . List.filter (== True)) !(sequence . replicate n $ bernoulli p)
+  ||| Dirichlet(concentrations)
+  dirichlet : Vect n Double -> m (Vect n Double)
+  dirichlet as = do
+    xs <- sequence $ map (`gamma` 1) as
+    let s  = sum xs
+        ys = map (/ s) xs
+    pure ys
 
   ||| DiscUniform(range); should return Nat from 0 to (range - 1)
   discreteUniform : (range : Nat) -> m Nat
   discreteUniform range = do
         r <- random
         pure $ cast (floor (cast range * r))
+
+  ||| Draw from a discrete distribution using the probability mass function and a sequence of draws from Bernoulli.
+  fromPMF : (pmf : Nat -> Double) -> m Nat
+  fromPMF pmf = f 0 1
+    where
+      f : Nat -> Double -> m Nat
+      f n marginal with (marginal < 0)
+       _ | False = do
+                let prob = pmf n
+                b <- bernoulli (prob / marginal)
+                if b then pure n else assert_total f (n + 1) (marginal - prob)
+       _ | True = assert_total $ idris_crash "fromPMF: total PMF above 1"
+
+  ||| Geometric(prob)
+  geometric : (p : Double) -> m Nat
+  geometric p = fromPMF (Geometric.geometric_pdf p)
+
+  ||| Poisson(λ)
+  poisson : (p : Double) -> m Nat
+  poisson p = fromPMF (Poisson.poisson_pdf p)
 
 public export
 interface Monad m => MonadCond m where
