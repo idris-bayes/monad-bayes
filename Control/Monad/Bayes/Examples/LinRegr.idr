@@ -57,8 +57,14 @@ mhLinRegr n_samples n_datapoints = do
 
 ||| Perform SMC inference over linear regression model parameters, `m`, `c`, `s`
 smcLinRegr : (n_timesteps : Nat) -> (n_samples : Nat) -> Nat -> IO (List (Log Double, LinRegrParams))
-smcLinRegr n_timesteps n_samples  n_datapoints = do
+smcLinRegr n_timesteps n_samples n_datapoints = do
   let linRegrData : Nat -> List (Double, Double)
       linRegrData n_datapoints = zip (map cast [0 ..  n_datapoints]) (map (*3) (map cast [0 ..  n_datapoints]))
   param_trace <- sampleIO $ runPopulation $ smcSystematic n_timesteps n_samples  (linRegr_inf Nothing Nothing Nothing (linRegrData n_datapoints))
   print param_trace >> pure param_trace
+
+{-
+pack --with-ipkg monad-bayes.ipkg repl Control/Monad/Bayes/Examples/LinRegr.idr
+
+:exec smcLinRegr 
+-}

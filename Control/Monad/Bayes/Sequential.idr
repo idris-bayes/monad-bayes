@@ -26,6 +26,7 @@ mutual
       f' <- mf
       v' <- mv
       pure $ f' v'
+
   export
   Monad m => Monad (Sequential m) where
     (>>=) (MkSeq mx) f = MkSeq $ do
@@ -34,10 +35,11 @@ mutual
         Left l    => runSeq (f l) 
         Right seq => pure (Right ((assert_total (>>=)) seq  f))
 
+  export
   MonadTrans Sequential where
     lift mx = MkSeq (map Left mx)
 
-  export
+export
 suspend : Monad m => Sequential m ()
 suspend = MkSeq (pure (Right (pure ())))
 

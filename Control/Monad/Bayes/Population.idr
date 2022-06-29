@@ -122,20 +122,17 @@ resampleGeneric :
   Population m a
 resampleGeneric resampler pop = fromWeightedList $ do
   particles <- runPopulation pop
-  Trace.trace ("resampleGeneric: number of particles is " ++ show (length particles)) (pure ())
   let (log_ps, xs) : (Vect (length particles) (Log Double), Vect (length particles) a) = unzip (fromList particles)
       n = length xs
       z = Numeric.Log.sum log_ps
   if z > 0
     then do
-      let weights = (map (exp . ln . (/ z)) log_ps)
-      
+      let weights    = map (exp . ln . (/ z)) log_ps
       ancestors <- resampler weights
       let offsprings = map (\idx => index idx xs) ancestors
-          j = map (z / cast n, ) offsprings
-      Trace.trace ("resampleGeneric: number of offsprings is " ++ show (length j)) (pure j)
+      pure (map (z / cast n, ) offsprings)
     else
-      (pure particles) 
+      pure particles
 
 ||| Systematic sampler.
 export

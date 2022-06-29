@@ -34,11 +34,11 @@ interface Monad m => MonadSample m where
   normal : (mean, sd : Double) -> m Double
   normal m s      = map (Normal.normal_cdf_inv m s) random
 
-  ||| Gamma : (shape, scale : Double) -> m Double
+  ||| Gamma(shape, scale) -> m Double
   gamma : (a, b : Double) -> m Double
   gamma a b       = map (Gamma.gamma_cdf_inv a b) random
 
-  ||| Beta : (alpha, beta : Double) -> m Double
+  ||| Beta(alpha, beta) -> m Double
   beta : (a, b : Double) -> m Double
   beta a b        = map (Beta.beta_cdf_inv a b) random
 
