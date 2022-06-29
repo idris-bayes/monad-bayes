@@ -140,8 +140,9 @@ systematic : {n : Nat} -> Double -> Vect n Double -> List (Fin n)
 systematic {n = Z}   u Nil = Nil
 systematic {n = S k} u (p :: ps) =
   let     w = Trace.trace ("systematic resampler: initial particle weights are " ++ show (p :: ps)) 5
-          prob : Fin (S k) -> Double
-          prob idx = index idx (p :: ps)
+          prob : Maybe (Fin (S k)) -> Double
+          prob (Just idx) = index idx (p :: ps)
+          prob  Nothing   = index last (p :: ps)
 
           inc : Double
           inc = 1 / cast (S k)
@@ -154,17 +155,17 @@ systematic {n = S k} u (p :: ps) =
           bounded_unsucc FZ = FZ
           bounded_unsucc (FS k) = weaken k
 
-          f : Nat -> Double -> Fin (S k) -> Double -> List (Fin (S k)) -> List (Fin (S k))
+          f : Nat -> Double -> Nat -> Double -> List Nat -> List Nat
           f i v j q acc = 
             if i == S k then acc else
             if v < q
-              then f (1 + i) (v + inc) j q (bounded_unsucc j :: acc)
-              else f  i v (bounded_succ j) (q + prob j) acc
+              then f (1 + i) (v + inc) j q ((minus j 1) :: acc)
+              else f  i v (1 + j) (q + prob (natToFin j (S k))) acc
           
           g : List (Fin (S k))
-          g = f Z (u / cast (S k)) FZ 0.0 []
+          g = map (\nat => fromMaybe FZ (natToFin nat (S k))) (f Z (u / cast (S k)) Z 0.0 [])
           -- h =  (the Nat 5)
-  in      Trace.trace ("systematic resampler: resampled particle indexes are: " ++ show (u / cast (S k))) g
+  in      Trace.trace ("systematic resampler: resampled particle indexes are: " ++ show g) g
 
 ||| Resample the population using the underlying monad and a systematic resampling scheme.
 ||| The total weight is preserved.
