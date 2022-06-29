@@ -28,7 +28,7 @@ implementation Applicative (Sequential m) where
 
 public export
 implementation Monad (Sequential m) where
-  R op k >>= f = R op ( assert_total (>>= f) . k)
+  R op k >>= f = R op (assert_total (>>= f) . k)
   L x   >>= f  = f x
 
 export
@@ -44,17 +44,6 @@ suspend = lift (pure ())
 finish : Monad m => Sequential m a -> m a
 finish (L a) = pure a
 finish (R mx k) = mx >>= (finish . k)
-
-||| Execute to the next suspension point.
--- If the computation is finished, do nothing.
-advance : Monad m => Sequential m a -> Sequential m a
-advance (L a) = L a
-advance (R mx k) = (lift mx) >>= k
-
-||| Return True if no more suspension points remain.
-finished : Monad m => Sequential m a -> m Bool
-finished (L a) = pure True
-finished   _   = pure False
 
 export
 MonadSample m => MonadSample (Sequential m) where
@@ -93,8 +82,12 @@ composeCopies k f = foldr (.) id (List.replicate k f)
 -- Applies a given transformation after each time step.
 export
 sis : Monad m
-  => (forall x. m x -> m x) -- | Transformation
-  -> Nat                    -- | Number of time steps
+  => (forall x. m x -> m x)   -- | Transformation
+  -> (k : Nat)                -- | Number of time steps
   -> Sequential m a
   -> m a
-sis f k = finish . composeCopies k (advance . hoistFirst f)
+sis f Z     seq = finish seq
+sis f (S n) seq with (hoistFirst f seq)
+  _ | (R op k) = do x <- op
+                    sis f n (k x)
+  _ | (L x)    = pure x
