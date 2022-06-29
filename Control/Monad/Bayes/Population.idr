@@ -4,6 +4,7 @@ import public Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Interface
 import Control.Monad.Trans
 import Data.List
+import Debug.Trace
 
 ||| List transformer
 public export
@@ -42,7 +43,7 @@ MonadCond m => MonadCond (ListT m) where
   score = lift . score
 
 export
-MonadInfer m => MonadInfer (ListT m)
+MonadInfer m => MonadInfer (ListT m) where
 
 ||| A collection of weighted samples, or particles.
 public export
@@ -118,24 +119,28 @@ resampleGeneric :
   Population m a
 resampleGeneric resampler pop = fromWeightedList $ do
   particles <- runPopulation pop
+  Trace.trace ("particles is result is: " ++ show (length particles)) (pure ())
   let (log_ps, xs) : (Vect (length particles) (Log Double), Vect (length particles) a) = unzip (fromList particles)
       n = length xs
       z = Numeric.Log.sum log_ps
   if z > 0
     then do
       let weights = (map (exp . ln . (/ z)) log_ps)
+      
       ancestors <- resampler weights
       let offsprings = map (\idx => index idx xs) ancestors
-      pure $ map (z / cast n, ) offsprings
+          k = map (z / cast n, ) offsprings
+      (pure k)
     else
-      pure particles
+      (pure particles) 
 
 ||| Systematic sampler.
 export
 systematic : {n : Nat} -> Double -> Vect n Double -> List (Fin n)
 systematic {n = Z}   u Nil = Nil
 systematic {n = S k} u (p :: ps) =
-  let     prob : Fin (S k) -> Double
+  let     w = Trace.trace ("system weights are: " ++ show (p :: ps)) 5
+          prob : Fin (S k) -> Double
           prob idx = index idx (p :: ps)
 
           inc : Double
@@ -149,14 +154,17 @@ systematic {n = S k} u (p :: ps) =
           bounded_unsucc FZ = FZ
           bounded_unsucc (FS k) = weaken k
 
-          f : Fin (S k) -> Double -> Fin (S k) -> Double -> List (Fin (S k)) -> List (Fin (S k))
-          f i v j q acc = 
-            if finToNat i == k then acc else
+          f : Nat -> Fin (S k) -> Double -> Fin (S k) -> Double -> List (Fin (S k)) -> List (Fin (S k))
+          f counter i v j q acc = 
+            if counter == S k then acc else
             if v < q
-              then f (bounded_succ i) (v + inc) j q (bounded_unsucc j :: acc)
-              else f i v (bounded_succ j) (q + prob j) acc
+              then f (counter + 1) (bounded_succ i) (v + inc) j q (bounded_unsucc j :: acc)
+              else f counter i v (bounded_succ j) (q + prob j) acc
           
-  in      f FZ (u / cast (S k)) FZ 0.0 []
+          g : List (Fin (S k))
+          g = f Z FZ (u / cast (S k)) FZ 0.0 []
+          -- h =  (the Nat 5)
+  in      Trace.trace ("systematic result is: " ++ show g) g
 
 ||| Resample the population using the underlying monad and a systematic resampling scheme.
 ||| The total weight is preserved.
@@ -172,7 +180,7 @@ resampleSystematic = resampleGeneric (\ps => (`systematic` ps) <$> random)
 ||| length of vector of weights.
 export
 multinomial : MonadSample m => {n : Nat} -> Vect n Double -> m (List (Fin n))
-multinomial ps = sequence $ replicate n (categorical ps)
+multinomial ps = Trace.trace ("ps are : " ++ show ps) (sequence $ replicate n (categorical ps))
 
 ||| Resample the population using the underlying monad and a multinomial resampling scheme.
 ||| The total weight is preserved.

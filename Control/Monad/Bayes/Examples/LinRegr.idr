@@ -17,7 +17,7 @@ record LinRegrParams where
   s : Double      -- standard deviation
 
 Show LinRegrParams where
-  show (MkLinRegrParams mv cv sv) = "(m : " ++ show mv ++ ", c : " ++ show cv ++ ", std : " ++ show sv ++ ")" 
+  show (MkLinRegrParams mv cv sv) = "(m : " ++ show mv ++ ")" -- ++ ", c : " ++ show cv ++ ", std : " ++ show sv ++ ")" 
 
 linRegr_prior : MonadSample m => Maybe Double -> Maybe Double -> Maybe Double -> m LinRegrParams
 linRegr_prior m0 c0 s0 = do
@@ -56,9 +56,9 @@ mhLinRegr n_samples n_datapoints = do
   print param_trace >> pure param_trace
 
 ||| Perform SMC inference over linear regression model parameters, `m`, `c`, `s`
-smcLinRegr : (n_samples : Nat) -> (n_timesteps : Nat) -> Nat -> IO (List (Log Double, LinRegrParams))
-smcLinRegr n_samples n_timesteps n_datapoints = do
+smcLinRegr : (n_timesteps : Nat) -> (n_samples : Nat) -> Nat -> IO (List (Log Double, LinRegrParams))
+smcLinRegr n_timesteps n_samples  n_datapoints = do
   let linRegrData : Nat -> List (Double, Double)
       linRegrData n_datapoints = zip (map cast [0 ..  n_datapoints]) (map (*3) (map cast [0 ..  n_datapoints]))
-  param_trace <- sampleIO $ runPopulation $ smcMultinomial n_samples n_timesteps (linRegr_inf Nothing Nothing Nothing (linRegrData n_datapoints))
+  param_trace <- sampleIO $ runPopulation $ smcSystematic n_timesteps n_samples  (linRegr_inf Nothing Nothing Nothing (linRegrData n_datapoints))
   print param_trace >> pure param_trace
