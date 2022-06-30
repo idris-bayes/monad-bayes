@@ -38,7 +38,9 @@ linRegr_sim m0 c0 s0 xs  = do
 linRegr_inf : MonadInfer m => Maybe Double -> Maybe Double -> Maybe Double -> List (Double, Double) -> m LinRegrParams
 linRegr_inf m0 c0 s0 xys  = do
   MkLinRegrParams mean c s <- linRegr_prior m0 c0 s0
-  _ <- sequence (map (\(x, y_obs) => score (Exp $ normal_pdf (mean * x + c) s y_obs)) xys)
+  
+  _ <- sequence (map (\(x, y_obs) => let logprob : Double = log $ normal_pdf (mean * x + c) s y_obs 
+                                     in  score (Exp $ logprob)) xys)
   pure (MkLinRegrParams mean c s)
 
 ||| Simulate outputs `ys` from a linear regression model
