@@ -92,7 +92,7 @@ runPopulation (MkPopulation m) = (runListT . runWeighted) m
 ||| Explicit representation of the weighted sample.
 export
 explicitPopulation : Functor m => Population m a -> m (List (Double, a))
-explicitPopulation = map (map (\(log_p, a) => (exp (ln log_p), a))) . runPopulation
+explicitPopulation = map (map (\(log_p, a) => (fromLogDomain log_p, a))) . runPopulation
 
 ||| Initialize 'Population' with a concrete weighted sample.
 export
@@ -124,13 +124,14 @@ resampleGeneric :
   Population m a
 resampleGeneric resampler pop = fromWeightedList $ do
   particles <- runPopulation pop
-  let (log_ps, xs)  : (Vect (length particles) (Log Double), Vect (length particles) a) 
+  let (log_ws, xs)  : (Vect (length particles) (Log Double), Vect (length particles) a) 
                     = unzip (fromList particles)
-      z : Log Double = Numeric.Log.sum log_ps 
-  if z > 0
+      z : Log Double = Numeric.Log.sum log_ws 
+
+  if isPositive z  
     then do
             let weights    : Vect (length particles) Double   
-                            = map (exp . ln . (/ z)) log_ps
+                            = map (exp . ln . (/ z)) log_ws
             ancestors <- resampler weights
             let offsprings : List a
                             = map (\idx => index idx xs) ancestors
@@ -143,7 +144,7 @@ export
 systematic : {n : Nat} -> Double -> Vect n Double -> List (Fin n)
 systematic {n = Z}   u Nil = Nil
 systematic {n = S k} u (p :: ps) =
-  let     w = Trace.trace ("systematic resampler: initial particle weights are " ++ show (p :: ps)) 5
+  let     
           prob : Maybe (Fin (S k)) -> Double
           prob (Just idx) = index idx (p :: ps)
           prob  Nothing   = index last (p :: ps)
@@ -162,8 +163,7 @@ systematic {n = S k} u (p :: ps) =
           particle_idxs = map (\nat => fromMaybe FZ (natToFin nat (S k))) 
                               (f Z (u / cast (S k)) Z 0.0 [])
 
-  in      Trace.trace ("systematic resampler: resampled particle indexes are: " ++ show particle_idxs) particle_idxs
--- :exec print $ systematic 0.77 [0.1, 0.25, 0.2, 0.05,0.15,0.05,0.1,0.05,0.05]
+  in      particle_idxs
 
 ||| Resample the population using the underlying monad and a systematic resampling scheme.
 ||| The total weight is preserved.
@@ -173,8 +173,6 @@ resampleSystematic :
   Population m a ->
   Population m a
 resampleSystematic = resampleGeneric (\ps => (`systematic` ps) <$> random)
--- :exec sampleIO (runPopulation $ resampleSystematic (spawn 10)) >>= print
-
 
 ||| Multinomial sampler.  Sample from \(0, \ldots, n - 1\) \(n\)
 ||| times drawn at random according to the weights where \(n\) is the
@@ -201,13 +199,19 @@ extractEvidence :
   Population (Weighted m) a
 extractEvidence pop = fromWeightedList $ do
   particles <- lift $ runPopulation pop
-  let (log_ps, xs) = unzip particles
-      z      : Log Double
-             = Numeric.Log.sum log_ps
-      log_ws : List (Log Double) 
-             = map (if z > 0 then (/ z) else const (toLogDomain $ 1.0 / cast (length log_ps))) log_ps
+
+  let (log_ws, xs) = unzip particles
+
+  let z      : Log Double
+             = Numeric.Log.sum log_ws
+
+  let normalized_log_ws : List (Log Double) 
+             = map (if isPositive z
+                      then (/ z) 
+                      else const (toLogDomain (1.0 / cast (length log_ws)))) log_ws
   score z
-  pure $ zip log_ws xs 
+
+  pure (zip normalized_log_ws xs)
 
 ||| Push the evidence estimator as a score to the transformed monad.
 ||| Weights are normalized after this operation.
@@ -244,20 +248,3 @@ collapse :
   Population m a ->
   m a
 collapse = applyWeight . proper
-
-||| Applies a random transformation to a population.
-export
-mapPopulation :
-  (Monad m) =>
-  (List (Log Double, a) -> m (List (Log Double, a))) ->
-  Population m a ->
-  Population m a
-mapPopulation f m = fromWeightedList $ runPopulation m >>= f
-
-||| Population average of a function, computed using unnormalized weights.
-export
-popAvg : (Monad m) => (a -> Double) -> Population m a -> m Double
-popAvg f p = do
-  xs <- explicitPopulation p
-  let ys = map (\(w, x) => f x * w) xs
-  pure (Prelude.sum ys)

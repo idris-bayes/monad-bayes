@@ -82,5 +82,7 @@ pmmhLinRegr n_mhsteps n_timesteps n_samples n_datapoints = do
 pack --with-ipkg monad-bayes.ipkg repl Control/Monad/Bayes/Examples/LinRegr.idr
 
 :exec smcLinRegr 
+
+:exec pmmhLinRegr 10 10 10 10
 -}
 
