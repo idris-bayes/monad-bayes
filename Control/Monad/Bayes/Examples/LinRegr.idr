@@ -9,6 +9,7 @@ import Control.Monad.Bayes.Traced.Static
 import Control.Monad.Bayes.Inference.SMC
 import Control.Monad.Bayes.Inference.PMMH
 import Control.Monad.Bayes.Inference.RMSMC
+import Control.Monad.Bayes.Inference.SMC2
 import Statistics.Distribution.Normal
 import Numeric.Log
 
@@ -86,6 +87,19 @@ rmsmcLinRegr n_mhsteps n_timesteps n_particles n_datapoints = do
       linRegrData n_datapoints = zip (map cast [0 ..  n_datapoints]) (map (*3) (map cast [0 ..  n_datapoints]))
   param_trace <- sampleIO $ runPopulation $
                   rmsmc  n_timesteps n_particles n_mhsteps (linRegr_inf (linRegrData n_datapoints))
+  print param_trace >> pure param_trace
+
+||| Perform SMC2 inference over linear regression model parameters, `m`, `c`, `s`
+smc2LinRegr :   (n_timesteps : Nat) ->
+                (n_inner_particles : Nat) ->
+                (n_outer_particles : Nat) ->
+                (n_mhsteps : Nat) 
+                -> Nat -> IO (List (Log Double, (List (Log Double, LinRegrParams))))
+smc2LinRegr n_timesteps n_inner_particles  n_outer_particles n_mhsteps n_datapoints = do
+  let linRegrData : Nat -> List (Double, Double)
+      linRegrData n_datapoints = zip (map cast [0 ..  n_datapoints]) (map (*3) (map cast [0 ..  n_datapoints]))
+  param_trace <- sampleIO $ runPopulation $
+                  smc2  n_timesteps n_inner_particles n_outer_particles n_mhsteps linRegr_prior (linRegr_noprior (linRegrData n_datapoints))
   print param_trace >> pure param_trace
 
 {-
