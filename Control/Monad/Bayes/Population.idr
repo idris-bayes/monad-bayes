@@ -2,6 +2,7 @@ module Control.Monad.Bayes.Population
 
 import public Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Interface
+import Control.Monad.Bayes.Sampler
 import Control.Monad.Trans
 import Data.List
 import Debug.Trace
@@ -111,7 +112,7 @@ hoist f = fromWeightedList . f . runPopulation
 ||| safe to use 'spawn' in arbitrary places in the program without introducing bias.
 export
 spawn : (isMonad : Monad m) => Nat -> Population m ()
-spawn n = fromWeightedList $ pure $ replicate n (Exp (1.0 / the (Double) (cast n)), ()) 
+spawn n = fromWeightedList $ pure $ replicate n (Exp (log $ 1.0 / the (Double) (cast n)), ()) 
 
 export
 resampleGeneric :
@@ -123,8 +124,8 @@ resampleGeneric :
 resampleGeneric resampler pop = fromWeightedList $ do
   particles <- runPopulation pop
   let (log_ps, xs) : (Vect (length particles) (Log Double), Vect (length particles) a) = unzip (fromList particles)
-      n = length xs
-      z = Numeric.Log.sum log_ps
+      n = trace ("log_ps is " ++ show (toList log_ps)) (length xs)
+      z = trace ("Sum ps is " ++ show (Numeric.Log.sum log_ps)) Numeric.Log.sum log_ps
   if z > 0
     then do
       let weights    = map (exp . ln . (/ z)) log_ps
@@ -134,7 +135,7 @@ resampleGeneric resampler pop = fromWeightedList $ do
     else
       pure particles
 
-||| Systematic sampler.
+||| Systematic sampler. [VERIFIED]
 export
 systematic : {n : Nat} -> Double -> Vect n Double -> List (Fin n)
 systematic {n = Z}   u Nil = Nil
@@ -159,6 +160,7 @@ systematic {n = S k} u (p :: ps) =
                               (f Z (u / cast (S k)) Z 0.0 [])
           -- h =  (the Nat 5)
   in      Trace.trace ("systematic resampler: resampled particle indexes are: " ++ show particle_idxs) particle_idxs
+-- :exec print $ systematic 0.77 [0.1, 0.25, 0.2, 0.05,0.15,0.05,0.1,0.05,0.05]
 
 ||| Resample the population using the underlying monad and a systematic resampling scheme.
 ||| The total weight is preserved.
@@ -168,6 +170,8 @@ resampleSystematic :
   Population m a ->
   Population m a
 resampleSystematic = resampleGeneric (\ps => (`systematic` ps) <$> random)
+-- :exec sampleIO (runPopulation $ resampleSystematic (spawn 10)) >>= print
+
 
 ||| Multinomial sampler.  Sample from \(0, \ldots, n - 1\) \(n\)
 ||| times drawn at random according to the weights where \(n\) is the

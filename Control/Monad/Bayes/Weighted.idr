@@ -18,7 +18,7 @@ record Weighted (m : Type -> Type) (a : Type) where
 ||| Obtain an explicit value of the likelihood for a given value
 public export
 runWeighted : Weighted m a -> m (Log Double, a)
-runWeighted (MkWeighted m) = runStateT 1 m 
+runWeighted (MkWeighted m) = runStateT (Exp (log 1)) m 
 
 export
 MonadTrans Weighted where
