@@ -39,7 +39,7 @@ linRegr_inf : MonadInfer m => Maybe Double -> Maybe Double -> Maybe Double -> Li
 linRegr_inf m0 c0 s0 xys  = do
   MkLinRegrParams mean c s <- linRegr_prior m0 c0 s0
   
-  _ <- sequence (map (\(x, y_obs) => let logprob : Log Double = Exp (log $ normal_pdf (mean * x + c) s y_obs )
+  _ <- sequence (map (\(x, y_obs) => let logprob : Log Double = toLogDomain (normal_pdf (mean * x + c) s y_obs )
                                      in  score logprob) xys)
   pure (MkLinRegrParams mean c s)
 

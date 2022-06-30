@@ -4,6 +4,7 @@ import public Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Interface
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Trans
+import Numeric.Log
 import Data.List
 import Debug.Trace
 
@@ -133,7 +134,7 @@ resampleGeneric resampler pop = fromWeightedList $ do
             ancestors <- resampler weights
             let offsprings : List a
                             = map (\idx => index idx xs) ancestors
-            pure $ map (z / (fromInteger $ cast (length particles)), ) offsprings
+            pure $ map (z / (toLogDomain $ length particles), ) offsprings
     else
             pure particles
 
@@ -202,9 +203,10 @@ extractEvidence pop = fromWeightedList $ do
   particles <- lift $ runPopulation pop -- List (Log Double, a)
   let (log_ps, xs) = unzip particles
       z = Numeric.Log.sum log_ps
-      ws = map (if z > 0 then (/ z) else const (Exp $ 1.0 / cast (length log_ps))) log_ps
+      log_ws : List (Log Double) 
+              = map (if z > 0 then (/ z) else const (toLogDomain $ 1.0 / cast (length log_ps))) log_ps
   score z
-  pure $ zip ws xs 
+  pure $ zip log_ws xs 
 
 ||| Push the evidence estimator as a score to the transformed monad.
 ||| Weights are normalized after this operation.
