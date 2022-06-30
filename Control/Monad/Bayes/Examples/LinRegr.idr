@@ -8,6 +8,7 @@ import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Traced.Static
 import Control.Monad.Bayes.Inference.SMC
 import Control.Monad.Bayes.Inference.PMMH
+import Control.Monad.Bayes.Inference.RMSMC
 import Statistics.Distribution.Normal
 import Numeric.Log
 
@@ -76,6 +77,15 @@ pmmhLinRegr n_mhsteps n_timesteps n_samples n_datapoints = do
       linRegrData n_datapoints = zip (map cast [0 ..  n_datapoints]) (map (*3) (map cast [0 ..  n_datapoints]))
   param_trace <- sampleIO $ prior $
                   pmmh n_mhsteps n_timesteps n_samples linRegr_prior (linRegr_noprior (linRegrData n_datapoints))
+  print param_trace >> pure param_trace
+
+||| Perform RMSMC inference over linear regression model parameters, `m`, `c`, `s`
+rmsmcLinRegr : (n_mhsteps : Nat) -> (n_timesteps : Nat) -> (n_samples : Nat) -> Nat -> IO (List (Log Double, LinRegrParams))
+rmsmcLinRegr n_mhsteps n_timesteps n_samples n_datapoints = do
+  let linRegrData : Nat -> List (Double, Double)
+      linRegrData n_datapoints = zip (map cast [0 ..  n_datapoints]) (map (*3) (map cast [0 ..  n_datapoints]))
+  param_trace <- sampleIO $ runPopulation $
+                  rmsmc  n_timesteps n_samples n_mhsteps (linRegr_inf (linRegrData n_datapoints))
   print param_trace >> pure param_trace
 
 {-
