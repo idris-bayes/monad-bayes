@@ -113,7 +113,7 @@ hoist f = fromWeightedList . f . runPopulation
 ||| safe to use 'spawn' in arbitrary places in the program without introducing bias.
 export
 spawn : (isMonad : Monad m) => Nat -> Population m ()
-spawn n = fromWeightedList $ pure $ replicate n (Exp (log $ 1.0 / the (Double) (cast n)), ()) 
+spawn n = fromWeightedList $ pure $ replicate n (toLogDomain (1.0 / cast n), ()) 
 
 export
 resampleGeneric :
@@ -181,7 +181,7 @@ resampleSystematic = resampleGeneric (\ps => (`systematic` ps) <$> random)
 ||| length of vector of weights.
 export
 multinomial : MonadSample m => {n : Nat} -> Vect n Double -> m (List (Fin n))
-multinomial ps = (sequence $ replicate n (categorical ps))
+multinomial ps = sequence $ replicate n (categorical ps)
 
 ||| Resample the population using the underlying monad and a multinomial resampling scheme.
 ||| The total weight is preserved.
@@ -200,11 +200,12 @@ extractEvidence :
   Population m a ->
   Population (Weighted m) a
 extractEvidence pop = fromWeightedList $ do
-  particles <- lift $ runPopulation pop -- List (Log Double, a)
+  particles <- lift $ runPopulation pop
   let (log_ps, xs) = unzip particles
-      z = Numeric.Log.sum log_ps
+      z      : Log Double
+             = Numeric.Log.sum log_ps
       log_ws : List (Log Double) 
-              = map (if z > 0 then (/ z) else const (toLogDomain $ 1.0 / cast (length log_ps))) log_ps
+             = map (if z > 0 then (/ z) else const (toLogDomain $ 1.0 / cast (length log_ps))) log_ps
   score z
   pure $ zip log_ws xs 
 

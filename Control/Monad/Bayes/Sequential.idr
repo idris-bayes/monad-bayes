@@ -67,6 +67,7 @@ hoistFirst : (forall x. m x -> m x) -> Sequential m a -> Sequential m a
 hoistFirst tau (MkSeq m) = MkSeq (tau m)
 
 -- | Apply a function a given number of times.
+export
 composeCopies : Nat -> (a -> a) -> (a -> a)
 composeCopies k f = foldr (.) id (List.replicate k f)
 

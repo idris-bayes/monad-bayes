@@ -9,6 +9,7 @@ import Control.Monad.Trans
 import Numeric.Log
 
 ||| Particle Marginal Metropolis-Hastings sampling.
+export
 pmmh :
   MonadInfer m =>
   -- | number of Metropolis-Hastings steps

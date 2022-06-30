@@ -39,7 +39,7 @@ Monad Trace where
 
 export
 singleton : Double -> Trace Double
-singleton u = MkTrace {variables = [u], output = u, density = 1}
+singleton u = MkTrace {variables = [u], output = u, density = toLogDomain 1.0}
 
 export
 scored : Log Double

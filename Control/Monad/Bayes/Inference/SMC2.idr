@@ -9,12 +9,13 @@ import Control.Monad.Trans
 import Numeric.Log
 
 ||| Helper monad transformer for preprocessing the model for 'smc2'.
+export
 record SMC2 (m : Type -> Type) (a : Type) where
   constructor MkSMC2
   setup : Sequential (Traced (Population m)) a 
 
 export
-Functor m => Functor (SMC2 m) where
+Monad m => Functor (SMC2 m) where
   map f (MkSMC2 mx) = MkSMC2 (map f mx) 
 
 export
