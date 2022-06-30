@@ -123,22 +123,21 @@ resampleGeneric :
   Population m a
 resampleGeneric resampler pop = fromWeightedList $ do
   particles <- runPopulation pop
-  let (log_ps, xs) : (Vect (length particles) (Log Double), Vect (length particles) a) = unzip (fromList particles)
-      n = -- trace ("log_ps is " ++ show (toList log_ps))
-          (length xs)  -- [VERIFIED]
-      z = -- trace ("Sum ps is " ++ show (Numeric.Log.sum log_ps)) 
-           Numeric.Log.sum log_ps -- [VERIFIED]
+  let (log_ps, xs)  : (Vect (length particles) (Log Double), Vect (length particles) a) 
+                    = unzip (fromList particles)
+      z : Log Double = Numeric.Log.sum log_ps 
   if z > 0
     then do
-      let weights    = map (exp . ln . (/ z)) log_ps -- [VERIFIED]
-      trace ("weights is " ++ show (toList weights)) (pure ())
-      ancestors <- resampler weights
-      let offsprings = map (\idx => index idx xs) ancestors
-      pure (map (z / (fromInteger $ cast n), ) offsprings) -- [VERIFIED]
+            let weights    : Vect (length particles) Double   
+                            = map (exp . ln . (/ z)) log_ps
+            ancestors <- resampler weights
+            let offsprings : List a
+                            = map (\idx => index idx xs) ancestors
+            pure $ map (z / (fromInteger $ cast (length particles)), ) offsprings
     else
-      pure particles
+            pure particles
 
-||| Systematic sampler. [VERIFIED]
+||| Systematic sampler.
 export
 systematic : {n : Nat} -> Double -> Vect n Double -> List (Fin n)
 systematic {n = Z}   u Nil = Nil
@@ -161,7 +160,7 @@ systematic {n = S k} u (p :: ps) =
           particle_idxs : List (Fin (S k))
           particle_idxs = map (\nat => fromMaybe FZ (natToFin nat (S k))) 
                               (f Z (u / cast (S k)) Z 0.0 [])
-          -- h =  (the Nat 5)
+
   in      Trace.trace ("systematic resampler: resampled particle indexes are: " ++ show particle_idxs) particle_idxs
 -- :exec print $ systematic 0.77 [0.1, 0.25, 0.2, 0.05,0.15,0.05,0.1,0.05,0.05]
 
@@ -181,7 +180,7 @@ resampleSystematic = resampleGeneric (\ps => (`systematic` ps) <$> random)
 ||| length of vector of weights.
 export
 multinomial : MonadSample m => {n : Nat} -> Vect n Double -> m (List (Fin n))
-multinomial ps = Trace.trace ("ps are : " ++ show ps) (sequence $ replicate n (categorical ps))
+multinomial ps = (sequence $ replicate n (categorical ps))
 
 ||| Resample the population using the underlying monad and a multinomial resampling scheme.
 ||| The total weight is preserved.

@@ -111,7 +111,7 @@ interface Monad m => MonadSample m where
 
 public export
 interface Monad m => MonadCond m where
-  ||| Record a likelihood
+  ||| Record a likelihood. Note: when calling `score (Exp p)`, p must already be in the log-domain.
   score : Log Double -> m ()  
 
 export
