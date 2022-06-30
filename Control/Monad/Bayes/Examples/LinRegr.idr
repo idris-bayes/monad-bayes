@@ -56,36 +56,36 @@ simLinRegr n_datapoints = do
 
 ||| Perform MH inference over linear regression model parameters, `m`, `c`, `s`
 mhLinRegr : (n_samples : Nat) -> Nat -> IO (Vect (S n_samples) LinRegrParams)
-mhLinRegr n_samples n_datapoints = do
+mhLinRegr n_mhsteps n_datapoints = do
   let linRegrData : Nat -> List (Double, Double)
       linRegrData n_datapoints = zip (map cast [0 ..  n_datapoints]) (map (*3) (map cast [0 ..  n_datapoints]))
-  param_trace <- sampleIO $ prior $ mh n_samples (linRegr_inf (linRegrData n_datapoints))
+  param_trace <- sampleIO $ prior $ mh n_mhsteps (linRegr_inf (linRegrData n_datapoints))
   print param_trace >> pure param_trace
 
 ||| Perform SMC inference over linear regression model parameters, `m`, `c`, `s`
 smcLinRegr : (n_timesteps : Nat) -> (n_samples : Nat) -> Nat -> IO (List (Log Double, LinRegrParams))
-smcLinRegr n_timesteps n_samples n_datapoints = do
+smcLinRegr n_timesteps n_particles n_datapoints = do
   let linRegrData : Nat -> List (Double, Double)
       linRegrData n_datapoints = zip (map cast [0 ..  n_datapoints]) (map (*3) (map cast [0 ..  n_datapoints]))
-  param_trace <- sampleIO $ runPopulation $ smcSystematic n_timesteps n_samples  (linRegr_inf (linRegrData n_datapoints))
+  param_trace <- sampleIO $ runPopulation $ smcSystematic n_timesteps n_particles  (linRegr_inf (linRegrData n_datapoints))
   print param_trace >> pure param_trace
 
 ||| Perform PMMH inference over linear regression model parameters, `m`, `c`, `s`
-pmmhLinRegr : (n_mhsteps : Nat) -> (n_timesteps : Nat) -> (n_samples : Nat) -> Nat -> IO (Vect (S n_mhsteps) (List (Log Double, LinRegrParams)))
-pmmhLinRegr n_mhsteps n_timesteps n_samples n_datapoints = do
+pmmhLinRegr : (n_mhsteps : Nat) -> (n_timesteps : Nat) -> (n_particles : Nat) -> Nat -> IO (Vect (S n_mhsteps) (List (Log Double, LinRegrParams)))
+pmmhLinRegr n_mhsteps n_timesteps n_particles n_datapoints = do
   let linRegrData : Nat -> List (Double, Double)
       linRegrData n_datapoints = zip (map cast [0 ..  n_datapoints]) (map (*3) (map cast [0 ..  n_datapoints]))
   param_trace <- sampleIO $ prior $
-                  pmmh n_mhsteps n_timesteps n_samples linRegr_prior (linRegr_noprior (linRegrData n_datapoints))
+                  pmmh n_mhsteps n_timesteps n_particles linRegr_prior (linRegr_noprior (linRegrData n_datapoints))
   print param_trace >> pure param_trace
 
 ||| Perform RMSMC inference over linear regression model parameters, `m`, `c`, `s`
-rmsmcLinRegr : (n_mhsteps : Nat) -> (n_timesteps : Nat) -> (n_samples : Nat) -> Nat -> IO (List (Log Double, LinRegrParams))
-rmsmcLinRegr n_mhsteps n_timesteps n_samples n_datapoints = do
+rmsmcLinRegr : (n_mhsteps : Nat) -> (n_timesteps : Nat) -> (n_particles : Nat) -> Nat -> IO (List (Log Double, LinRegrParams))
+rmsmcLinRegr n_mhsteps n_timesteps n_particles n_datapoints = do
   let linRegrData : Nat -> List (Double, Double)
       linRegrData n_datapoints = zip (map cast [0 ..  n_datapoints]) (map (*3) (map cast [0 ..  n_datapoints]))
   param_trace <- sampleIO $ runPopulation $
-                  rmsmc  n_timesteps n_samples n_mhsteps (linRegr_inf (linRegrData n_datapoints))
+                  rmsmc  n_timesteps n_particles n_mhsteps (linRegr_inf (linRegrData n_datapoints))
   print param_trace >> pure param_trace
 
 {-

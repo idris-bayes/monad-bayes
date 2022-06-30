@@ -47,17 +47,18 @@ export
 smc2 :
   MonadSample m =>
   -- | number of time steps
-  Nat ->
+  (n_timesteps : Nat) ->
   -- | number of inner particles
-  Nat ->
+  (n_inner_particles : Nat) ->
   -- | number of outer particles
-  Nat ->
+  (n_outer_particles : Nat) ->
   -- | number of MH transitions
-  Nat ->
+  (n_mhsteps : Nat) ->
   -- | model parameters
   Sequential (Traced (Population m)) b ->
   -- | model
   (b -> Sequential (Population (SMC2 m)) a) ->
   Population m (List (Log Double, a))
-smc2 k n p t param model =
-  rmsmc k p t (param >>= setup . runPopulation . smcSystematicPush k n . model)
+smc2 n_timesteps n_inner_particles n_outer_particles n_mhsteps param model =
+  rmsmc n_timesteps n_outer_particles n_mhsteps 
+    (param >>= setup . runPopulation . smcSystematicPush n_timesteps n_inner_particles . model)

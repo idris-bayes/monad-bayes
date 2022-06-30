@@ -86,7 +86,7 @@ sis :
   -- | transformation
   (forall x. m x -> m x) ->
   -- | number of time steps
-  Nat ->
+  (n_timesteps : Nat) ->
   Sequential m a ->
   m a
 sis f k = finish . composeCopies k (advance . hoistFirst f)

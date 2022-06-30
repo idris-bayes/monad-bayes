@@ -9,17 +9,17 @@ import Control.Monad.Bayes.Weighted
 -- An SMC template that takes a custom resampler.
 export
 sir :
-  (isMonad : Monad m) =>
+  (Monad m) =>
   -- | resampler
   (forall x. Population m x -> Population m x) ->
   -- | number of timesteps
-  Nat ->
+  (n_timesteps : Nat) ->
   -- | population size
-  Nat ->
+  (n_particles : Nat) ->
   -- | model
   Sequential (Population m) a ->
   Population m a
-sir resampler k n = sis resampler k . Sequential.hoistFirst (spawn n >>)
+sir resampler n_timesteps n_particles = sis resampler n_timesteps . Sequential.hoistFirst (spawn n_particles >>)
 
 ||| Sequential Monte Carlo with multinomial resampling at each timestep.
 -- Weights are not normalized.
@@ -27,9 +27,9 @@ export
 smcMultinomial :
   MonadSample m =>
   -- | number of timesteps
-  Nat ->
-  -- | number of particles
-  Nat ->
+  (n_timesteps : Nat) ->
+  -- | population size
+  (n_particles : Nat) ->
   -- | model
   Sequential (Population m) a ->
   Population m a
@@ -41,9 +41,9 @@ export
 smcSystematic :
   MonadSample m =>
   -- | number of timesteps
-  Nat ->
-  -- | number of particles
-  Nat ->
+  (n_timesteps : Nat) ->
+  -- | population size
+  (n_particles : Nat) ->
   -- | model
   Sequential (Population m) a ->
   Population m a
@@ -56,9 +56,9 @@ export
 smcMultinomialPush :
   MonadInfer m =>
   -- | number of timesteps
-  Nat ->
-  -- | number of particles
-  Nat ->
+  (n_timesteps : Nat) ->
+  -- | population size
+  (n_particles : Nat) ->
   -- | model
   Sequential (Population m) a ->
   Population m a
@@ -71,9 +71,9 @@ export
 smcSystematicPush :
   MonadInfer m =>
   -- | number of timesteps
-  Nat ->
-  -- | number of particles
-  Nat ->
+  (n_timesteps : Nat) ->
+  -- | population size
+  (n_particles : Nat) ->
   -- | model
   Sequential (Population m) a ->
   Population m a

@@ -92,7 +92,7 @@ runPopulation (MkPopulation m) = (runListT . runWeighted) m
 ||| Explicit representation of the weighted sample.
 export
 explicitPopulation : Functor m => Population m a -> m (List (Double, a))
-explicitPopulation = map (map (\(log_p, a) => (fromLogDomain log_p, a))) . runPopulation
+explicitPopulation = map (map (\(log_w, a) => (fromLogDomain log_w, a))) . runPopulation
 
 ||| Initialize 'Population' with a concrete weighted sample.
 export
@@ -143,11 +143,11 @@ resampleGeneric resampler pop = fromWeightedList $ do
 export
 systematic : {n : Nat} -> Double -> Vect n Double -> List (Fin n)
 systematic {n = Z}   u Nil = Nil
-systematic {n = S k} u (p :: ps) =
+systematic {n = S k} u ws =
   let     
           prob : Maybe (Fin (S k)) -> Double
-          prob (Just idx) = index idx (p :: ps)
-          prob  Nothing   = index last (p :: ps)
+          prob (Just idx) = index idx ws
+          prob  Nothing   = index last ws
 
           inc : Double
           inc = 1 / cast (S k)
@@ -172,14 +172,14 @@ resampleSystematic :
   (MonadSample m) =>
   Population m a ->
   Population m a
-resampleSystematic = resampleGeneric (\ps => (`systematic` ps) <$> random)
+resampleSystematic = resampleGeneric (\ws => (`systematic` ws) <$> random)
 
 ||| Multinomial sampler.  Sample from \(0, \ldots, n - 1\) \(n\)
 ||| times drawn at random according to the weights where \(n\) is the
 ||| length of vector of weights.
 export
 multinomial : MonadSample m => {n : Nat} -> Vect n Double -> m (List (Fin n))
-multinomial ps = sequence $ replicate n (categorical ps)
+multinomial ws = sequence $ replicate n (categorical ws)
 
 ||| Resample the population using the underlying monad and a multinomial resampling scheme.
 ||| The total weight is preserved.
@@ -231,8 +231,8 @@ proper :
   Weighted m a
 proper pop = do
   particles <- runPopulation $ extractEvidence pop
-  let (log_ps_vec, xs_vec) = unzip (fromList particles)
-  idx <- the (Weighted m (Fin (length particles))) (logCategorical log_ps_vec)
+  let (log_ws_vec, xs_vec) = unzip (fromList particles)
+  idx <- the (Weighted m (Fin (length particles))) (logCategorical log_ws_vec)
   pure (index idx xs_vec)
 
 ||| Model evidence estimator, also known as pseudo-marginal likelihood.

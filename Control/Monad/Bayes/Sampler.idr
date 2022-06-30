@@ -3,7 +3,7 @@ module Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Interface
 import System.Random
 
-||| An 'IO' based random sampler (I'm not sure if the `ReaderT GenIO IO` pattern is necessary, and for what particular reason we want to use it. The purpose of that pattern is to propagate and mutably update a GenIO seed though a program -- might need to talk to Ohad about this?)
+||| An 'IO' based random sampler.
 public export
 SamplerIO : Type -> Type
 SamplerIO = IO

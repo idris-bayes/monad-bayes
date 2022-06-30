@@ -15,9 +15,6 @@ record Traced (m : Type -> Type) (a : Type) where
   model     : Weighted (FreeSampler m) a
   traceDist : m (Trace a)
 
-liftA2 : Applicative f => (a -> b -> c) -> f a -> f b -> f c
-liftA2 f fa = (<*>) (map f fa)
-
 public export
 Monad m => Functor (Traced m) where
   map f (MkTraced m d) = MkTraced (map f m) (map (map f) d)
@@ -25,7 +22,7 @@ Monad m => Functor (Traced m) where
 public export
 Monad m => Applicative (Traced m) where
   pure x = MkTraced (pure x) (pure (pure x))
-  (MkTraced mf df) <*> (MkTraced mx dx) = MkTraced (mf <*> mx) (liftA2 (<*>) df dx) 
+  (MkTraced mf df) <*> (MkTraced mx dx) = MkTraced (mf <*> mx) ((map (<*>) df) <*> dx) 
 
 public export
 Monad m => Monad (Traced m) where

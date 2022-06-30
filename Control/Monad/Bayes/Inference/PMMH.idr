@@ -13,15 +13,15 @@ export
 pmmh :
   MonadInfer m =>
   -- | number of Metropolis-Hastings steps
-  (t : Nat) ->
+  (n_mhsteps : Nat) ->
   -- | number of time steps
-  Nat ->
+  (n_timesteps : Nat) ->
   -- | number of particles
-  Nat ->
+  (n_particles : Nat) ->
   -- | model parameters prior
   Traced m b ->
   -- | model
   (b -> Sequential (Population m) a) ->
-  m (Vect (S t) (List (Log Double, a)))
-pmmh t k n param model =
-  mh t (param >>= runPopulation . pushEvidence . Population.hoist lift . smcSystematic k n . model)
+  m (Vect (S n_mhsteps) (List (Log Double, a)))
+pmmh n_mhsteps n_timesteps n_particles param model =
+  mh n_mhsteps (param >>= runPopulation . pushEvidence . Population.hoist lift . smcSystematic n_timesteps n_particles . model)
