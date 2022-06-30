@@ -58,7 +58,7 @@ public export
 withPartialRandomness : (Monad m) => List Double -> FreeSampler m a -> m (a, List Double)
 withPartialRandomness randomness k = 
   runWriterT $ 
-    evalStateT {m = WriterT (List Double) m} randomness $ 
+    evalStateT randomness $ 
       iterTM {t = \m => StateT (List Double) (WriterT (List Double) m) } f k
   where f : (MonadWriter (List Double) n, MonadState (List Double) n) => SamF (n a) -> n a
         f (Random k) = do
