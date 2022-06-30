@@ -119,7 +119,7 @@ export
 resampleGeneric : {k : Nat} ->
   MonadSample m => 
   -- | resampler
-  (forall k. Vect k Double -> m (Vect k (Fin k))) ->
+  (Vect k Double -> m (Vect k (Fin k))) ->
   Population k m a ->
   Population k m a
 resampleGeneric resampler pop = fromWeightedList $ do
@@ -139,112 +139,112 @@ resampleGeneric resampler pop = fromWeightedList $ do
     else
             pure particles
 
--- ||| Systematic sampler.
--- export
--- systematic : {k : Nat} -> Double -> Vect k Double -> Vect k (Fin k)
--- systematic {k = Z}   u Nil = Nil
--- systematic {k = S n} u ws =
---   let     
---           prob : Maybe (Fin (S n)) -> Double
---           prob (Just idx) = index idx ws
---           prob  Nothing   = index last ws
+||| Systematic sampler.
+export
+systematic : {k : Nat} -> Double -> Vect k Double -> Vect k (Fin k)
+systematic {k = Z}   u Nil = Nil
+systematic {k = S n} u ws =
+  let     
+          prob : Maybe (Fin (S n)) -> Double
+          prob (Just idx) = index idx ws
+          prob  Nothing   = index last ws
 
---           inc : Double
---           inc = 1 / cast (S n)
+          inc : Double
+          inc = 1 / cast (S n)
 
---           f : Nat -> Double -> Nat -> Double -> Vect k Nat -> Vect k Nat
---           f i v j q acc = 
---             if i == S n then acc else
---             if v < q
---               then f (1 + i) (v + inc) j q ?hole -- ((minus j 1) :: acc)
---               else f  i v (1 + j) (q + prob (natToFin j (S n))) acc
+          f : Nat -> Double -> Nat -> Double -> Vect (S n) Nat -> Vect (S n) Nat
+          f i v j q acc = 
+            if i == S n then acc else
+            if v < q
+              then f (1 + i) (v + inc) j q (replaceAt (restrict n (cast i)) (minus j 1) acc)
+              else f  i v (1 + j) (q + prob (natToFin j (S n))) acc
           
---           particle_idxs : Vect (S n) (Fin (S n))
---           particle_idxs = map (\nat => fromMaybe FZ (natToFin nat (S n))) 
---                               (f Z (u / cast (S n)) Z 0.0 (replicate (S n) 0))
+          particle_idxs : Vect (S n) (Fin (S n))
+          particle_idxs = map (\nat => fromMaybe FZ (natToFin nat (S n))) 
+                              (f Z (u / cast (S n)) Z 0.0 (replicate (S n) 0))
 
---   in      particle_idxs
+  in      particle_idxs
 
--- ||| Resample the population using the underlying monad and a systematic resampling scheme.
--- ||| The total weight is preserved.
--- export
--- resampleSystematic :
---   (MonadSample m) =>
---   Population m a ->
---   Population m a
--- resampleSystematic = resampleGeneric (\ws => (`systematic` ws) <$> random)
+||| Resample the population using the underlying monad and a systematic resampling scheme.
+||| The total weight is preserved.
+export
+resampleSystematic : {k : Nat} ->
+  (MonadSample m) =>
+  Population k m a ->
+  Population k m a
+resampleSystematic = resampleGeneric (\ws => (`systematic` ws) <$> random)
 
--- ||| Multinomial sampler.  Sample from \(0, \ldots, n - 1\) \(n\)
--- ||| times drawn at random according to the weights where \(n\) is the
--- ||| length of vector of weights.
--- export
--- multinomial : MonadSample m => {n : Nat} -> Vect n Double -> m (Vect (Fin n))
--- multinomial ws = sequence $ replicate n (categorical ws)
+||| Multinomial sampler.  Sample from \(0, \ldots, n - 1\) \(n\)
+||| times drawn at random according to the weights where \(n\) is the
+||| length of vector of weights.
+export
+multinomial : MonadSample m => {k : Nat} -> Vect k Double -> m (Vect k (Fin k))
+multinomial ws = sequence $ replicate k (categorical ws)
 
--- ||| Resample the population using the underlying monad and a multinomial resampling scheme.
--- ||| The total weight is preserved.
--- export
--- resampleMultinomial :
---   (MonadSample m) =>
---   Population m a ->
---   Population m a
--- resampleMultinomial = resampleGeneric multinomial
+||| Resample the population using the underlying monad and a multinomial resampling scheme.
+||| The total weight is preserved.
+export
+resampleMultinomial : {k : Nat} ->
+  (MonadSample m) =>
+  Population k m a ->
+  Population k m a
+resampleMultinomial = resampleGeneric multinomial
 
--- ||| Separate the sum of weights into the 'Weighted' transformer.
--- ||| Weights are normalized after this operation.
--- export
--- extractEvidence :
---   Monad m =>
---   Population m a ->
---   Population (Weighted m) a
--- extractEvidence pop = fromWeightedList $ do
---   particles <- lift $ runPopulation pop
+||| Separate the sum of weights into the 'Weighted' transformer.
+||| Weights are normalized after this operation.
+export
+extractEvidence : {k : Nat} ->
+  Monad m =>
+  Population k m a ->
+  Population k (Weighted m) a
+extractEvidence pop = fromWeightedList $ do
+  particles <- lift $ runPopulation pop
 
---   let (log_ws, xs) = unzip particles
+  let (log_ws, xs) = unzip particles
 
---   let z      : Log Double
---              = Numeric.Log.sum log_ws
+  let z      : Log Double
+             = Numeric.Log.sum log_ws
 
---   let normalized_log_ws : Vect (Log Double) 
---              = map (if isPositive z
---                       then (/ z) 
---                       else const (toLogDomain (1.0 / cast (length log_ws)))) log_ws
---   score z
+  let normalized_log_ws : Vect k (Log Double) 
+             = map (if isPositive z
+                      then (/ z) 
+                      else const (toLogDomain (1.0 / cast (length log_ws)))) log_ws
+  score z
 
---   pure (zip normalized_log_ws xs)
+  pure (zip normalized_log_ws xs)
 
--- ||| Push the evidence estimator as a score to the transformed monad.
--- ||| Weights are normalized after this operation.
--- export
--- pushEvidence :
---   MonadCond m =>
---   Population m a ->
---   Population m a
--- pushEvidence = hoist applyWeight . extractEvidence
+||| Push the evidence estimator as a score to the transformed monad.
+||| Weights are normalized after this operation.
+export
+pushEvidence : {k : Nat} ->
+  MonadCond m =>
+  Population k m a ->
+  Population k m a
+pushEvidence = hoist applyWeight . extractEvidence
 
--- ||| A properly weighted single sample, that is one picked at random according
--- ||| to the weights, with the sum of all weights.
--- export
--- proper :
---   (MonadSample m) =>
---   Population m a ->
---   Weighted m a
--- proper pop = do
---   particles <- runPopulation $ extractEvidence pop
---   let (log_ws_vec, xs_vec) = unzip (fromList particles)
---   idx <- the (Weighted m (Fin (length particles))) (logCategorical log_ws_vec)
---   pure (index idx xs_vec)
+||| A properly weighted single sample, that is one picked at random according
+||| to the weights, with the sum of all weights.
+export
+proper : {k : Nat} ->
+  (MonadSample m) =>
+  Population k m a ->
+  Weighted m a
+proper pop = do
+  particles <- runPopulation $ extractEvidence pop
+  let (log_ws_vec, xs_vec) = unzip particles
+  idx <- the (Weighted m (Fin k)) (logCategorical log_ws_vec)
+  pure (index idx xs_vec)
 
--- ||| Model evidence estimator, also known as pseudo-marginal likelihood.
--- export
--- evidence : (Monad m) => Population m a -> m (Log Double)
--- evidence = extractWeight . runPopulation . extractEvidence
+||| Model evidence estimator, also known as pseudo-marginal likelihood.
+export
+evidence : {k : Nat} -> (Monad m) => Population k m a -> m (Log Double)
+evidence = extractWeight . runPopulation . extractEvidence
 
--- ||| Picks one point from the population and uses model evidence as a 'score' in the transformed monad.
--- ||| This way a single sample can be selected from a population without introducing bias.
--- export
--- collapse :
---   (MonadInfer m) =>
---   Population m a ->
---   m a
--- collapse = applyWeight . proper
+||| Picks one point from the population and uses model evidence as a 'score' in the transformed monad.
+||| This way a single sample can be selected from a population without introducing bias.
+export
+collapse : {k : Nat} ->
+  (MonadInfer m) =>
+  Population k m a ->
+  m a
+collapse = applyWeight . proper
