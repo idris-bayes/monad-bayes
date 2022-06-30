@@ -50,118 +50,118 @@ export
 export
 {k : Nat} -> MonadInfer m => MonadInfer (VectT k m) where
 
--- ||| A collection of weighted samples, or particles.
--- public export
--- record Population (m : Type -> Type) (a : Type) where
---   constructor MkPopulation
---   runPopulation' : Weighted (VectT m) a 
+||| A collection of weighted samples, or particles.
+public export
+record Population (k : Nat) (m : Type -> Type) (a : Type) where
+  constructor MkPopulation
+  runPopulation' : Weighted (VectT k m) a 
 
--- export
--- Functor m => Functor (Population m) where
---   map f (MkPopulation mx) = MkPopulation (map f mx) 
+export
+Functor m => Functor (Population k m) where
+  map f (MkPopulation mx) = MkPopulation (map f mx) 
 
--- export
--- Monad m => Applicative (Population m) where
---   pure = MkPopulation . pure 
---   (MkPopulation mf) <*> (MkPopulation ma) = MkPopulation (mf <*> ma)
+export
+{k : Nat} -> Monad m => Applicative (Population k m) where
+  pure = MkPopulation . pure 
+  (MkPopulation mf) <*> (MkPopulation ma) = MkPopulation (mf <*> ma)
 
--- export
--- Monad m => Monad (Population m) where
---   (MkPopulation mx) >>= k = MkPopulation (mx >>= (runPopulation' . k))
+export
+{k : Nat} -> Monad m => Monad (Population k m) where
+  (MkPopulation mx) >>= k = MkPopulation (mx >>= (runPopulation' . k))
 
--- export
--- MonadTrans Population where
---   lift = MkPopulation . lift . lift
+export
+{k : Nat} -> MonadTrans (Population k) where
+  lift = MkPopulation . lift . lift
 
--- export
--- MonadSample m => MonadSample (Population m) where
---   random = lift random
+export
+{k : Nat} -> MonadSample m => MonadSample (Population k m) where
+  random = lift random
 
--- export
--- Monad m => MonadCond (Population m) where
---   score w = MkPopulation $ score w -- Call score from Weighted
+export
+{k : Nat} -> Monad m => MonadCond (Population k m) where
+  score w = MkPopulation $ score w -- Call score from Weighted
 
--- export
--- MonadSample m => MonadInfer (Population m) where
+export
+{k : Nat} -> MonadSample m => MonadInfer (Population k m) where
 
--- ||| Explicit representation of the weighted sample with weights in the log domain.
--- export
--- runPopulation : Population m a -> m (Vect (Log Double, a))
--- runPopulation (MkPopulation m) = (runVectT . runWeighted) m
+||| Explicit representation of the weighted sample with weights in the log domain.
+export
+runPopulation : Population k m a -> m (Vect k (Log Double, a))
+runPopulation (MkPopulation m) = (runVectT . runWeighted) m
 
--- ||| Explicit representation of the weighted sample.
--- export
--- explicitPopulation : Functor m => Population m a -> m (Vect (Double, a))
--- explicitPopulation = map (map (\(log_w, a) => (fromLogDomain log_w, a))) . runPopulation
+||| Explicit representation of the weighted sample.
+export
+explicitPopulation : Functor m => Population k m a -> m (Vect k (Double, a))
+explicitPopulation = map (map (\(log_w, a) => (fromLogDomain log_w, a))) . runPopulation
 
--- ||| Initialize 'Population' with a concrete weighted sample.
--- export
--- fromWeightedList : Monad m => m (Vect (Log Double, a)) -> Population m a
--- fromWeightedList = MkPopulation . withWeight . MkVectT
+||| Initialize 'Population' with a concrete weighted sample.
+export
+fromWeightedList : {k : Nat} ->  Monad m => m (Vect k (Log Double, a)) -> Population k m a
+fromWeightedList = MkPopulation . withWeight . MkVectT
 
--- ||| Applies a transformation to the inner monad.
--- export
--- hoist :
---   Monad m2 =>
---   (forall x. m1 x -> m2 x) ->
---   Population m1 a ->
---   Population m2 a
--- hoist f = fromWeightedList . f . runPopulation
+||| Applies a transformation to the inner monad.
+export
+hoist : {k : Nat} -> 
+  Monad m2 =>
+  (forall x. m1 x -> m2 x) ->
+  Population k m1 a ->
+  Population k m2 a
+hoist f = fromWeightedList . f . runPopulation
 
--- ||| Increase the sample size by a given factor.
--- ||| The weights are adjusted such that their sum is preserved. It is therefore 
--- ||| safe to use 'spawn' in arbitrary places in the program without introducing bias.
--- export
--- spawn : (isMonad : Monad m) => Nat -> Population m ()
--- spawn n = fromWeightedList $ pure $ replicate n (toLogDomain (1.0 / cast n), ()) 
+||| Increase the sample size by a given factor.
+||| The weights are adjusted such that their sum is preserved. It is therefore 
+||| safe to use 'spawn' in arbitrary places in the program without introducing bias.
+export
+spawn : (isMonad : Monad m) => (k : Nat) -> Population k m ()
+spawn n = fromWeightedList $ pure $ replicate n (toLogDomain (1.0 / cast n), ()) 
 
--- export
--- resampleGeneric :
---   MonadSample m => 
---   -- | resampler
---   ({k : Nat} -> Vect k Double -> m (Vect (Fin k))) ->
---   Population m a ->
---   Population m a
--- resampleGeneric resampler pop = fromWeightedList $ do
---   particles <- runPopulation pop
---   let (log_ws, xs)  : (Vect (length particles) (Log Double), Vect (length particles) a) 
---                     = unzip (fromList particles)
---       z : Log Double = Numeric.Log.sum log_ws 
+export
+resampleGeneric : {k : Nat} ->
+  MonadSample m => 
+  -- | resampler
+  (forall k. Vect k Double -> m (Vect k (Fin k))) ->
+  Population k m a ->
+  Population k m a
+resampleGeneric resampler pop = fromWeightedList $ do
+  particles <- runPopulation pop
+  let (log_ws, xs)  : (Vect k (Log Double), Vect k a) 
+                    = unzip particles
+      z : Log Double = Numeric.Log.sum log_ws 
 
---   if isPositive z  
---     then do
---             let weights    : Vect (length particles) Double   
---                             = map (exp . ln . (/ z)) log_ws
---             ancestors <- resampler weights
---             let offsprings : Vect a
---                             = map (\idx => index idx xs) ancestors
---             pure $ map (z / (toLogDomain $ length particles), ) offsprings
---     else
---             pure particles
+  if isPositive z  
+    then do
+            let weights    : Vect k Double   
+                            = map (exp . ln . (/ z)) log_ws
+            ancestors <- resampler weights
+            let offsprings : Vect k a
+                            = map (\idx => index idx xs) ancestors
+            pure $ map (z / (toLogDomain $ length particles), ) offsprings
+    else
+            pure particles
 
 -- ||| Systematic sampler.
 -- export
--- systematic : {n : Nat} -> Double -> Vect n Double -> Vect (Fin n)
--- systematic {n = Z}   u Nil = Nil
--- systematic {n = S k} u ws =
+-- systematic : {k : Nat} -> Double -> Vect k Double -> Vect k (Fin k)
+-- systematic {k = Z}   u Nil = Nil
+-- systematic {k = S n} u ws =
 --   let     
---           prob : Maybe (Fin (S k)) -> Double
+--           prob : Maybe (Fin (S n)) -> Double
 --           prob (Just idx) = index idx ws
 --           prob  Nothing   = index last ws
 
 --           inc : Double
---           inc = 1 / cast (S k)
+--           inc = 1 / cast (S n)
 
---           f : Nat -> Double -> Nat -> Double -> Vect Nat -> Vect Nat
+--           f : Nat -> Double -> Nat -> Double -> Vect k Nat -> Vect k Nat
 --           f i v j q acc = 
---             if i == S k then acc else
+--             if i == S n then acc else
 --             if v < q
---               then f (1 + i) (v + inc) j q ((minus j 1) :: acc)
---               else f  i v (1 + j) (q + prob (natToFin j (S k))) acc
+--               then f (1 + i) (v + inc) j q ?hole -- ((minus j 1) :: acc)
+--               else f  i v (1 + j) (q + prob (natToFin j (S n))) acc
           
---           particle_idxs : Vect (Fin (S k))
---           particle_idxs = map (\nat => fromMaybe FZ (natToFin nat (S k))) 
---                               (f Z (u / cast (S k)) Z 0.0 [])
+--           particle_idxs : Vect (S n) (Fin (S n))
+--           particle_idxs = map (\nat => fromMaybe FZ (natToFin nat (S n))) 
+--                               (f Z (u / cast (S n)) Z 0.0 (replicate (S n) 0))
 
 --   in      particle_idxs
 
