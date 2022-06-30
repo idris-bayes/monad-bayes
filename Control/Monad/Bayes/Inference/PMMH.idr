@@ -2,7 +2,6 @@ module Control.Monad.Bayes.Inference.PMMH
 
 import Control.Monad.Bayes.Interface
 import Control.Monad.Bayes.Inference.SMC
-import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Sequential
 import Control.Monad.Bayes.Traced.Static
 import Control.Monad.Trans
@@ -21,7 +20,7 @@ pmmh :
   -- | model parameters prior
   Traced m b ->
   -- | model
-  (b -> Sequential (Population m) a) ->
-  m (Vect (S n_mhsteps) (List (Log Double, a)))
+  (b -> Sequential (Population n_particles m) a) ->
+  m (Vect (S n_mhsteps) (Vect n_particles (Log Double, a)))
 pmmh n_mhsteps n_timesteps n_particles param model =
-  mh n_mhsteps (param >>= runPopulation . pushEvidence . Population.hoist lift . smcSystematic n_timesteps n_particles . model)
+  mh n_mhsteps (param >>= runPopulation . pushEvidence . PopulationVect.hoist lift . smcSystematic n_timesteps n_particles . model)

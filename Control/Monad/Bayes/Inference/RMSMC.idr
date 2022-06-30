@@ -1,7 +1,7 @@
 module Control.Monad.Bayes.Inference.RMSMC
 
 import Control.Monad.Bayes.Interface
-import Control.Monad.Bayes.Population
+import Control.Monad.Bayes.PopulationVect
 import Control.Monad.Bayes.Sequential
 import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Traced.Static
@@ -19,8 +19,8 @@ rmsmc :
   -- | number of Metropolis-Hastings transitions after each resampling
   (n_mhsteps : Nat) ->
   -- | model
-  Sequential (Static.Traced (Population m)) a ->
-  Population m a
+  Sequential (Static.Traced (Population n_particles m)) a ->
+  Population n_particles m a
 rmsmc n_timesteps n_particles n_mhsteps =
   Static.marginal
     . sis (composeCopies n_mhsteps mhStep . hoistT resampleSystematic) n_timesteps
@@ -38,8 +38,8 @@ rmsmcBasic :
   -- | number of Metropolis-Hastings transitions after each resampling
   (n_mhsteps : Nat) ->
   -- | model
-  Sequential (Basic.Traced (Population m)) a ->
-  Population m a
+  Sequential (Basic.Traced (Population n_particles m)) a ->
+  Population n_particles m a
 rmsmcBasic n_timesteps n_particles n_mhsteps =
   Basic.marginal
     . sis (composeCopies n_mhsteps Basic.mhStep . Basic.hoistT resampleSystematic) n_timesteps
@@ -58,8 +58,8 @@ rmsmcLocal :
   -- | number of Metropolis-Hastings transitions after each resampling
   (n_mhsteps : Nat) ->
   -- | model
-  Sequential (Dynamic.Traced (Population m)) a ->
-  Population m a
+  Sequential (Dynamic.Traced (Population n_particles m)) a ->
+  Population n_particles m a
 rmsmcLocal n_timesteps n_particles n_mhsteps =
   Dynamic.marginal
     . sis (Dynamic.freeze . composeCopies n_mhsteps Dynamic.mhStep . Dynamic.hoistT resampleSystematic) n_timesteps

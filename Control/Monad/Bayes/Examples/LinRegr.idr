@@ -64,7 +64,7 @@ mhLinRegr n_mhsteps n_datapoints = do
   print param_trace >> pure param_trace
 
 ||| Perform SMC inference over linear regression model parameters, `m`, `c`, `s`
-smcLinRegr : (n_timesteps : Nat) -> (n_samples : Nat) -> Nat -> IO (List (Log Double, LinRegrParams))
+smcLinRegr : (n_timesteps : Nat) -> (n_particles : Nat) -> Nat -> IO (Vect n_particles (Log Double, LinRegrParams))
 smcLinRegr n_timesteps n_particles n_datapoints = do
   let linRegrData : Nat -> List (Double, Double)
       linRegrData n_datapoints = zip (map cast [0 ..  n_datapoints]) (map (*3) (map cast [0 ..  n_datapoints]))
@@ -72,7 +72,7 @@ smcLinRegr n_timesteps n_particles n_datapoints = do
   print param_trace >> pure param_trace
 
 ||| Perform PMMH inference over linear regression model parameters, `m`, `c`, `s`
-pmmhLinRegr : (n_mhsteps : Nat) -> (n_timesteps : Nat) -> (n_particles : Nat) -> Nat -> IO (Vect (S n_mhsteps) (List (Log Double, LinRegrParams)))
+pmmhLinRegr : (n_mhsteps : Nat) -> (n_timesteps : Nat) -> (n_particles : Nat) -> Nat -> IO (Vect (S n_mhsteps)  (Vect n_particles (Log Double, LinRegrParams)))
 pmmhLinRegr n_mhsteps n_timesteps n_particles n_datapoints = do
   let linRegrData : Nat -> List (Double, Double)
       linRegrData n_datapoints = zip (map cast [0 ..  n_datapoints]) (map (*3) (map cast [0 ..  n_datapoints]))
@@ -81,7 +81,7 @@ pmmhLinRegr n_mhsteps n_timesteps n_particles n_datapoints = do
   print param_trace >> pure param_trace
 
 ||| Perform RMSMC inference over linear regression model parameters, `m`, `c`, `s`
-rmsmcLinRegr : (n_mhsteps : Nat) -> (n_timesteps : Nat) -> (n_particles : Nat) -> Nat -> IO (List (Log Double, LinRegrParams))
+rmsmcLinRegr : (n_mhsteps : Nat) -> (n_timesteps : Nat) -> (n_particles : Nat) -> Nat -> IO (Vect n_particles (Log Double, LinRegrParams))
 rmsmcLinRegr n_mhsteps n_timesteps n_particles n_datapoints = do
   let linRegrData : Nat -> List (Double, Double)
       linRegrData n_datapoints = zip (map cast [0 ..  n_datapoints]) (map (*3) (map cast [0 ..  n_datapoints]))
@@ -94,7 +94,7 @@ smc2LinRegr :   (n_timesteps : Nat) ->
                 (n_inner_particles : Nat) ->
                 (n_outer_particles : Nat) ->
                 (n_mhsteps : Nat) 
-                -> Nat -> IO (List (Log Double, (List (Log Double, LinRegrParams))))
+                -> Nat -> IO (Vect n_outer_particles (Log Double, (Vect n_inner_particles (Log Double, LinRegrParams))))
 smc2LinRegr n_timesteps n_inner_particles  n_outer_particles n_mhsteps n_datapoints = do
   let linRegrData : Nat -> List (Double, Double)
       linRegrData n_datapoints = zip (map cast [0 ..  n_datapoints]) (map (*3) (map cast [0 ..  n_datapoints]))

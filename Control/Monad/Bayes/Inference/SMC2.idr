@@ -10,37 +10,37 @@ import Numeric.Log
 
 ||| Helper monad transformer for preprocessing the model for 'smc2'.
 export
-record SMC2 (m : Type -> Type) (a : Type) where
+record SMC2 (n_particles : Nat) (m : Type -> Type) (a : Type) where
   constructor MkSMC2
-  setup : Sequential (Traced (Population m)) a 
+  setup : Sequential (Traced (Population n_particles m)) a 
 
 export
-Monad m => Functor (SMC2 m) where
+{n_particles : Nat} -> Monad m => Functor (SMC2 n_particles m) where
   map f (MkSMC2 mx) = MkSMC2 (map f mx) 
 
 export
-Monad m => Applicative (SMC2 m) where
+{n_particles : Nat} -> Monad m => Applicative (SMC2 n_particles m) where
   pure = MkSMC2 . pure 
   (MkSMC2 mf) <*> (MkSMC2 ma) = MkSMC2 (mf <*> ma)
 
 export
-Monad m => Monad (SMC2 m) where
+{n_particles : Nat} -> Monad m => Monad (SMC2 n_particles m) where
   (MkSMC2 mx) >>= k = MkSMC2 ((assert_total (>>=)) mx (setup . k))
 
 export
-MonadTrans SMC2 where
+{n_particles : Nat} -> MonadTrans (SMC2 n_particles) where
   lift = MkSMC2 . lift . lift . lift
 
 export
-MonadSample m => MonadSample (SMC2 m) where
+{n_particles : Nat} -> MonadSample m => MonadSample (SMC2 n_particles m) where
   random = lift random
 
 export
-Monad m => MonadCond (SMC2 m) where
+{n_particles : Nat} -> Monad m => MonadCond (SMC2 n_particles m) where
   score w = MkSMC2 $ score w 
 
 export
-MonadSample m => MonadInfer (SMC2 m) where
+{n_particles : Nat} -> MonadSample m => MonadInfer (SMC2 n_particles m) where
 
 ||| Sequential Monte Carlo squared.
 export
@@ -55,10 +55,10 @@ smc2 :
   -- | number of MH transitions
   (n_mhsteps : Nat) ->
   -- | model parameters
-  Sequential (Traced (Population m)) b ->
+  Sequential (Traced (Population n_outer_particles m)) b ->
   -- | model
-  (b -> Sequential (Population (SMC2 m)) a) ->
-  Population m (List (Log Double, a))
+  (b -> Sequential (Population n_inner_particles (SMC2 n_outer_particles  m)) a) ->
+  Population n_outer_particles m (Vect n_inner_particles (Log Double, a))
 smc2 n_timesteps n_inner_particles n_outer_particles n_mhsteps param model =
   rmsmc n_timesteps n_outer_particles n_mhsteps 
     (param >>= setup . runPopulation . smcSystematicPush n_timesteps n_inner_particles . model)
