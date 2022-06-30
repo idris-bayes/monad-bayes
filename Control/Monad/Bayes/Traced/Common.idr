@@ -59,9 +59,8 @@ mhTrans : MonadSample m => Weighted (FreeSampler m) a -> Trace a -> m (Trace a)
 mhTrans mw t@(MkTrace {variables = us, output = x, density = p}) = do
   us' <- do
     i <- discreteUniform (length us) 
-    u' <- random
     case splitAt i us of
-      (xs, _ :: ys) => pure $ xs ++ (u' :: ys)
+      (xs, _ :: ys) => pure $ xs ++ (!random :: ys)
       _             => ?error_impossible
   ((q, b), vs) <- runWriterT $ runWeighted $ Weighted.hoist (writerT . withPartialRandomness us') mw
   let ratio : Double = (exp . ln) $ min 1 ( (q * (Exp $ log $ cast (length us))) / 
@@ -69,7 +68,6 @@ mhTrans mw t@(MkTrace {variables = us, output = x, density = p}) = do
                                           )
   accept <- bernoulli ratio
   pure $ if accept then MkTrace vs b q else t
-
 
 ||| A variant of 'mhTrans' with an external sampling monad.
 export

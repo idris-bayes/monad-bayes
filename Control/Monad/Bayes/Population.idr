@@ -8,6 +8,8 @@ import Numeric.Log
 import Data.List
 import Debug.Trace
 
+-- | pack --with-ipkg monad-bayes.ipkg repl Control/Monad/Bayes/Population.idr
+
 ||| List transformer
 public export
 record ListT (m : Type -> Type) (a : Type) where
@@ -156,14 +158,17 @@ systematic {n = S k} u ws =
           f i v j q acc = 
             if i == S k then acc else
             if v < q
-              then f (1 + i) (v + inc) j q ((minus j 1) :: acc)
-              else f  i v (1 + j) (q + prob (natToFin j (S k))) acc
+              then f (S i) (v + inc) j    q                             ((minus j 1) :: acc)
+              else f  i    v        (S j) (q + prob (natToFin j (S k))) acc
           
           particle_idxs : List (Fin (S k))
           particle_idxs = map (\nat => fromMaybe FZ (natToFin nat (S k))) 
                               (f Z (u / cast (S k)) Z 0.0 [])
 
   in      particle_idxs
+-- :exec print $ systematic 0.77 ([0.1, 0.25, 0.2, 0.05,0.15,0.05,0.1,0.05,0.05])
+-- = [8, 6, 5, 4, 2, 2, 1, 1, 0]
+
 
 ||| Resample the population using the underlying monad and a systematic resampling scheme.
 ||| The total weight is preserved.
