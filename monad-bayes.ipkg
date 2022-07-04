@@ -1,4 +1,8 @@
 package monad-bayes
+version   = 0.1.0
+authors   = "Minh Nguyen and Jacob Walters"
+license   = "The BSD 3-Clause License"
+sourceloc = "www.github.com/idris-bayes/monad-bayes"
 
 depends = contrib, free, distributions, log-domain
 
