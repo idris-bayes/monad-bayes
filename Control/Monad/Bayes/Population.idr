@@ -128,18 +128,18 @@ resampleGeneric resampler pop = fromWeightedList $ do
   particles <- runPopulation pop
   let (log_ws, xs)  : (Vect (length particles) (Log Double), Vect (length particles) a) 
                     = unzip (fromList particles)
-      z : Log Double = Numeric.Log.sum log_ws 
-
-  if isPositive z  
+      z : Log Double = Numeric.Log.sum log_ws
+  if fromLogDomain z > 0 
     then do
             let weights    : Vect (length particles) Double   
-                            = map (exp . ln . (/ z)) log_ws
+                           = map (fromLogDomain . (/ z)) log_ws
             ancestors <- resampler weights
             let offsprings : List a
-                            = map (\idx => index idx xs) ancestors
+                           = map (\idx => index idx xs) ancestors
             pure $ map (z / (toLogDomain $ length particles), ) offsprings
     else
             pure particles
+            
 
 ||| Systematic sampler.
 export
@@ -211,7 +211,7 @@ extractEvidence pop = fromWeightedList $ do
              = Numeric.Log.sum log_ws
 
   let normalized_log_ws : List (Log Double) 
-             = map (if isPositive z
+             = map (if fromLogDomain z > 0
                       then (/ z) 
                       else const (toLogDomain (1.0 / cast (length log_ws)))) log_ws
   score z
