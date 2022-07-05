@@ -49,6 +49,11 @@ smcSystematic :
   Population m a
 smcSystematic = sir resampleSystematic
 
+||| Default synonym for smcSystematic
+export
+smc : MonadSample m => (n_timesteps : Nat) -> (n_particles : Nat) -> Sequential (Population m) a -> Population m a
+smc = smcSystematic
+
 ||| Sequential Monte Carlo with multinomial resampling at each timestep.
 -- Weights are normalized at each timestep and the total weight is pushed
 -- as a score into the transformed monad.
