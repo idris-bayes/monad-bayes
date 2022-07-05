@@ -61,7 +61,7 @@ mhTrans mw t@(MkTrace {variables = us, output = x, density = p}) = do
     i <- discreteUniform (length us) 
     case splitAt i us of
       (xs, _ :: ys) => pure $ xs ++ (!random :: ys)
-      _             => assert_total $ idris_crash "error impossible"
+      _             => ?error_impossible
   ((q, b), vs) <- runWriterT $ runWeighted $ Weighted.hoist (writerT . withPartialRandomness us') mw
   let ratio : Double = (exp . ln) $ min 1 ( (q * (Exp $ log $ cast (length us))) / 
                                             (p * (Exp $ log $ cast (length vs)))
