@@ -54,14 +54,14 @@ simLinRegr n_datapoints = do
   print ys >> pure ys
 
 ||| Perform MH inference over linear regression model parameters, `m`, `c`, `s`
-mhLinRegr : (n_samples : Nat) -> Nat -> IO (Vect (S n_samples) LinRegrParams)
+mhLinRegr : (n_mhsteps : Nat) -> Nat -> IO (Vect (S n_mhsteps) LinRegrParams)
 mhLinRegr n_mhsteps n_datapoints = do
   let xys = mkLinRegrData n_datapoints
   param_trace <- sampleIO $ prior $ mh n_mhsteps (linRegr_prior >>= linRegr_inf xys)
   print param_trace >> pure param_trace
 
 ||| Perform SMC inference over linear regression model parameters, `m`, `c`, `s`
-smcLinRegr : (n_timesteps : Nat) -> (n_samples : Nat) -> Nat -> IO (List (Log Double, LinRegrParams))
+smcLinRegr : (n_timesteps : Nat) -> (n_particles : Nat) -> Nat -> IO (List (Log Double, LinRegrParams))
 smcLinRegr n_timesteps n_particles n_datapoints = do
   let xys = mkLinRegrData n_datapoints
   param_trace <- sampleIO $ runPopulation $ smcSystematic n_timesteps n_particles (linRegr_prior >>= linRegr_inf xys)
