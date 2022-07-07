@@ -45,7 +45,7 @@ withRandomness randomness = evalStateT randomness . iterTM f
         f (Random k) = do
           xs <- the (n (List Double)) get
           case xs of
-            []      => ?randomness_too_short  -- ERROR
+            []      => assert_total $ idris_crash ("withRandomness: randomness too short!")
             y :: ys => put ys >> k y
 
 MonadTrans (\m => StateT (List Double) (WriterT (List Double) m)) where
@@ -64,7 +64,7 @@ withPartialRandomness randomness k =
         f (Random k) = do
           xs <- the (n (List Double)) get
           x <- case xs of
-            []      => ?randomness_too_short1  -- ERROR
+            []      => assert_total $ idris_crash ("withPartialRandomness: randomness too short!")
             y :: ys => put ys >> pure y
           tell [x]
           k x
