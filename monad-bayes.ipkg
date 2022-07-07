@@ -3,6 +3,7 @@ version   = 0.1.0
 authors   = "Minh Nguyen and Jacob Walters"
 license   = "The BSD 3-Clause License"
 sourceloc = "www.github.com/idris-bayes/monad-bayes"
+brief     = "A probabilistic language with emphasis on compositional inference, based on the original Haskell library"
 
 depends = contrib, free, distribution, log-domain
 
