@@ -10,12 +10,7 @@ import public Data.List
 import public Data.Vect
 import System.Random
 
-import public Statistics.Distribution.Uniform
-import public Statistics.Distribution.Normal
-import public Statistics.Distribution.Beta
-import public Statistics.Distribution.Gamma
-import public Statistics.Distribution.Geometric
-import public Statistics.Distribution.Poisson
+import public Statistics.Distribution
 
 import public Numeric.Log
 
@@ -28,19 +23,19 @@ interface Monad m => MonadSample m where
 
   ||| Uniform(min, max)
   uniform : (min, max : Double) -> m Double
-  uniform min max = map (Uniform.uniform_cdf_inv min max) random
+  uniform min max = map (gsl_uniform_cdf_inv min max) random
 
   ||| Normal(mean, sd)
   normal : (mean, sd : Double) -> m Double
-  normal m s      = map (Normal.normal_cdf_inv m s) random
+  normal m s      = map (gsl_normal_cdf_inv m s) random
 
   ||| Gamma(shape, scale) -> m Double
   gamma : (a, b : Double) -> m Double
-  gamma a b       = map (Gamma.gamma_cdf_inv a b) random
+  gamma a b       = map (gsl_gamma_cdf_inv a b) random
 
   ||| Beta(alpha, beta) -> m Double
   beta : (a, b : Double) -> m Double
-  beta a b        = map (Beta.beta_cdf_inv a b) random
+  beta a b        = map (gsl_beta_cdf_inv a b) random
 
   ||| Bernoulli(prob)
   bernoulli : (p : Double) -> m Bool
@@ -103,11 +98,11 @@ interface Monad m => MonadSample m where
 
   ||| Geometric(prob)
   geometric : (p : Double) -> m Nat
-  geometric p = fromPMF (Geometric.geometric_pdf p)
+  geometric p = fromPMF (gsl_geometric_pdf p)
 
   ||| Poisson(λ)
   poisson : (p : Double) -> m Nat
-  poisson p = fromPMF (Poisson.poisson_pdf p)
+  poisson p = fromPMF (gsl_poisson_pdf p)
 
 public export
 interface Monad m => MonadCond m where

@@ -42,7 +42,7 @@ linRegr_prior = do
 ||| A linear regression model for inference on a set of model parameters
 linRegr_inf : MonadInfer m => List (Double, Double) -> LinRegrParams -> m LinRegrParams
 linRegr_inf xys (MkLinRegrParams m0 c0 s0) = do
-  _ <- sequence (map (\(x, y_obs) => let logprob : Log Double = toLogDomain (normal_pdf (m0 * x + c0) s0 y_obs )
+  _ <- sequence (map (\(x, y_obs) => let logprob : Log Double = toLogDomain (gsl_normal_pdf (m0 * x + c0) s0 y_obs )
                                      in  score logprob) xys)
   pure (MkLinRegrParams m0 c0 s0)
 
