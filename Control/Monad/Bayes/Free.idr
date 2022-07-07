@@ -55,16 +55,16 @@ MonadTrans (\m => StateT (List Double) (WriterT (List Double) m)) where
 ||| Return the output value and a record of all random choices used, whether
 ||| taken as input or drawn using the transformed monad.
 public export
-withPartialRandomness : (Monad m) => List Double -> FreeSampler m a -> m (a, List Double)
+withPartialRandomness : MonadSample m => List Double -> FreeSampler m a -> m (a, List Double)
 withPartialRandomness randomness k = 
   runWriterT $ 
     evalStateT randomness $ 
       iterTM {t = \m => StateT (List Double) (WriterT (List Double) m) } f k
-  where f : (MonadWriter (List Double) n, MonadState (List Double) n) => SamF (n a) -> n a
+  where f : (MonadSample n, MonadWriter (List Double) n, MonadState (List Double) n) => SamF (n a) -> n a
         f (Random k) = do
           xs <- the (n (List Double)) get
           x <- case xs of
-            []      => assert_total $ idris_crash ("withPartialRandomness: randomness too short!")
+            []      => random
             y :: ys => put ys >> pure y
           tell [x]
           k x
