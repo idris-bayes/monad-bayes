@@ -1,4 +1,4 @@
-module Benchmarks
+module Benchmark
 
 import System.File.ReadWrite
 import System.Clock
@@ -26,9 +26,9 @@ writeRow file_name (label, values) = do
 ||| Execute a program once and return the duration in seconds
 benchmark : IO a -> IO Double
 benchmark prog = do
-  t1     <- clockTime Process
+  t1     <- clockTime UTC
   _      <- prog
-  t2     <- clockTime Process
+  t2     <- clockTime UTC
   let duration_ns : Integer
       duration_ns = nanoseconds (timeDifference t2 t1)
 
@@ -120,3 +120,18 @@ bench_RMSMC = do
     benchRow ("LR50-RMSMC10", \rejuv_steps => rmsmcLinRegr fixed_rmsmc_particles rejuv_steps fixed_lr_datasize) row_header
     benchRow ("HMM20-RMSMC10", \rejuv_steps => rmsmcHMM fixed_rmsmc_particles rejuv_steps fixed_hmm_datasize) row_header
     benchRow ("Topic50-RMSMC10", \rejuv_steps => rmsmcTopic fixed_rmsmc_particles rejuv_steps fixed_topic_datasize) row_header
+
+
+main : IO ()
+main = do
+  bench_LR
+  bench_HMM
+  bench_Topic
+  bench_MH
+  bench_SMC
+  bench_RMSMC
+
+{-
+pack --with-ipkg examples.ipkg repl Benchmark.idr
+-}
+

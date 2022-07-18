@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# LANGUAGE RankNTypes #-}
 {-# HLINT ignore "Use camelCase" #-}
-module Benchmarks where
+module Benchmark where
 
 import LinRegr
 import HMM
@@ -108,3 +108,12 @@ bench_RMSMC = do
     benchRow ("LR50-RMSMC10", \rejuv_steps -> rmsmcLinRegr fixed_rmsmc_particles rejuv_steps fixed_lr_datasize) row_header
     benchRow ("HMM20-RMSMC10", \rejuv_steps -> rmsmcHMM fixed_rmsmc_particles rejuv_steps fixed_hmm_datasize) row_header
     benchRow ("Topic50-RMSMC10", \rejuv_steps -> rmsmcTopic fixed_rmsmc_particles rejuv_steps fixed_topic_datasize) row_header
+
+benchmark :: IO ()
+benchmark = do
+  bench_LR
+  bench_HMM
+  bench_Topic
+  bench_MH
+  bench_SMC
+  bench_RMSMC
