@@ -1,0 +1,6 @@
+package benchmarks
+
+depends = contrib, free, monad-bayes, distribution, log-domain
+
+modules = Main
+        , LinRegr

@@ -80,7 +80,7 @@ rmsmcLinRegr : (n_mhsteps : Nat) -> (n_timesteps : Nat) -> (n_particles : Nat) -
 rmsmcLinRegr n_mhsteps n_timesteps n_particles n_datapoints = do
   let xys = mkLinRegrData n_datapoints
   param_trace <- sampleIO $ runPopulation $
-                  rmsmc  n_timesteps n_particles n_mhsteps (linRegr_prior >>= linRegr_inf xys)
+                  rmsmc n_timesteps n_particles n_mhsteps (linRegr_prior >>= linRegr_inf xys)
   print param_trace >> pure param_trace
 
 ||| Perform SMC2 inference over linear regression model parameters, `m`, `c`, `s`
