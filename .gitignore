@@ -1,5 +1,5 @@
 build
 .vscode
-benchmarks/haskell/dist-newstyle
+dist-newstyle
 *.csv
 *.swp
