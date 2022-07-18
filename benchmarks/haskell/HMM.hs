@@ -1,9 +1,14 @@
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use camelCase" #-}
 module HMM where
 
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Traced.Basic
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Weighted
+import Control.Monad.Bayes.Population ( runPopulation )
+import Control.Monad.Bayes.Inference.SMC ( smcSystematic )
+import Control.Monad.Bayes.Inference.RMSMC ( rmsmc )
 import Criterion (benchmark)
 import           Statistics.Distribution        ( logProbability )
 import qualified Statistics.Distribution.Binomial  as SB
@@ -57,10 +62,43 @@ hmm  x (y:ys) params = do
   x' <- hmmNode x y params
   hmm x' ys params
 
---- Execute HMM
+-- | Data
+fixed_init_state :: Int
+fixed_init_state = 0
 
+mkHMMData :: Int -> IO [Int]
+mkHMMData n_nodes = sampleIO $ do
+  Params trans_p obs_p <- hmmPrior
+  let genData i x
+        | i >= n_nodes = return []
+        | otherwise = do
+            x' <- transModel trans_p x
+            y' <- binomial x' obs_p
+            ys <- genData (i + 1) x'
+            return (y':ys)
+  genData n_nodes fixed_init_state
+
+-- | MH
 mhHMM :: Int -> Int -> IO ()
-mhHMM n_samples n_steps = do
-  ys <- undefined
-  sampleIO $ prior $ mh n_samples (hmmPrior >>= hmm 0 (head ys))
+mhHMM n_mhsteps n_nodes = do
+  dataset <- mkHMMData n_nodes
+  sampleIO $ prior $ mh n_mhsteps (hmmPrior >>= hmm fixed_init_state dataset)
+  return ()
+
+-- | SMC
+smcHMM :: Int -> Int -> IO ()
+smcHMM n_particles n_nodes = do
+  dataset <- mkHMMData n_nodes
+  let n_timesteps = n_particles
+  sampleIO $ runPopulation $ smcSystematic n_timesteps n_particles
+    (hmmPrior >>= hmm fixed_init_state dataset)
+  return ()
+
+-- | RMSMC
+rmsmcLinRegr :: Int -> Int -> Int -> IO ()
+rmsmcLinRegr n_particles n_mhsteps n_nodes = do
+  dataset <- mkHMMData n_nodes
+  let n_timesteps = n_particles
+  sampleIO $ runPopulation $ rmsmc n_timesteps n_particles n_mhsteps
+    (hmmPrior >>= hmm fixed_init_state dataset)
   return ()

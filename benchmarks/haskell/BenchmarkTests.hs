@@ -5,7 +5,7 @@ module BenchmarkTests where
 
 import LinRegr
 import HMM
-import LDA
+import Topic
 
 import Criterion.Main
 import Criterion.Types
@@ -40,5 +40,5 @@ benchmarkHMMMH_DataSize = do
 
 benchmarkTopicMH_DataSize = do
     let sample_size = 2000
-    benchmark "lda/MH/data-size" mhLDA
+    benchmark "topic/MH/data-size" mhTopic
        [(show data_size, (sample_size, data_size)) | data_size <- [40, 80, 120, 160, 200]]

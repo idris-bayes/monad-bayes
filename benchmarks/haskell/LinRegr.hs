@@ -41,11 +41,11 @@ linRegr xys (LinRegrParams m c σ) = do
 -- | Data
 mkLinRegrData :: Int -> IO [(Double, Double)]
 mkLinRegrData n_datapoints = sampleIO $ do
-  m <- normal 0 3
-  c <- normal 0 5
-  σ <- uniform 1 3
+  LinRegrParams m c σ <- linRegrPrior
+
   let xs = [0 .. (fromIntegral n_datapoints)]
   ys <- mapM (\x -> normal (m * x + c) σ) xs
+
   return (zip xs ys)
 
 -- | MH
