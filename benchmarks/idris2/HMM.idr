@@ -73,6 +73,7 @@ mkHMMData n_nodes = sampleIO $ do
   genData 0 fixed_init_state
 
 ||| MH
+export
 mhHMM : Nat -> Nat -> IO ()
 mhHMM n_mhsteps n_nodes = do
   dataset <- mkHMMData n_nodes
@@ -81,6 +82,7 @@ mhHMM n_mhsteps n_nodes = do
   pure ()
 
 ||| SMC
+export
 smcHMM : Nat -> Nat -> IO ()
 smcHMM n_particles n_nodes = do
   dataset <- mkHMMData n_nodes
@@ -90,6 +92,7 @@ smcHMM n_particles n_nodes = do
   pure ()
 
 ||| RMSMC
+export
 rmsmcHMM : Nat -> Nat -> Nat -> IO ()
 rmsmcHMM n_particles n_mhsteps n_nodes = do
   dataset <- mkHMMData n_nodes

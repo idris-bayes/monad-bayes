@@ -39,7 +39,7 @@ benchRow :: NFData a
   -> (String, [Int])
   -- | List of run-times
   -> IO ()
-benchRow (prog_name, prog) (param_name, params) = do
+benchRow (prog_name, prog) (_, params) = do
   -- Run program over varying parameter values and write e.g. "LinRegr-MH100, 0.23, 0.87, 1.23, 1.78, 2.45"
   means <- mapM (benchMean . prog) params
   writeRow fileName (prog_name, means)

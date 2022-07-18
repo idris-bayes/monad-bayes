@@ -44,6 +44,7 @@ mkLinRegrData n_datapoints = sampleIO $ do
   pure (zip xs ys)
 
 ||| MH
+export
 mhLinRegr : (n_mhsteps : Nat) -> Nat -> IO ()
 mhLinRegr n_mhsteps n_datapoints = do
   dataset <- mkLinRegrData n_datapoints
@@ -51,6 +52,7 @@ mhLinRegr n_mhsteps n_datapoints = do
   pure ()
 
 ||| SMC
+export
 smcLinRegr : (n_particles : Nat) -> Nat -> IO ()
 smcLinRegr n_particles n_datapoints = do
   dataset <- mkLinRegrData n_datapoints
@@ -59,6 +61,7 @@ smcLinRegr n_particles n_datapoints = do
   pure ()
 
 ||| RMSMC
+export
 rmsmcLinRegr : (n_particles : Nat) -> (n_mhsteps : Nat) ->  Nat -> IO ()
 rmsmcLinRegr n_particles n_mhsteps  n_datapoints = do
   dataset <- mkLinRegrData n_datapoints

@@ -76,6 +76,7 @@ topicModel vocab words (MkParams doc_topic_ps topic_word_ps) = do
   pure (MkParams doc_topic_ps topic_word_ps)
 
 ||| MH
+export
 mhTopic : Nat -> Nat -> IO ()
 mhTopic n_mhsteps n_words = do
   dataset <- mkTopicData n_words
@@ -84,6 +85,7 @@ mhTopic n_mhsteps n_words = do
   pure ()
 
 ||| SMC
+export
 smcTopic : Nat -> Nat -> IO ()
 smcTopic n_particles n_words = do
   dataset <- mkTopicData n_words
@@ -93,6 +95,7 @@ smcTopic n_particles n_words = do
   pure ()
 
 ||| RMSMC
+export
 rmsmcTopic : Nat -> Nat -> Nat -> IO ()
 rmsmcTopic n_particles n_mhsteps n_words = do
   dataset <- mkTopicData n_words
