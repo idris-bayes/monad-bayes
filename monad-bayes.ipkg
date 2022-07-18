@@ -21,4 +21,3 @@ modules = Control.Monad.Bayes.Interface
         , Control.Monad.Bayes.Inference.RMSMC
         , Control.Monad.Bayes.Inference.PMMH
         , Control.Monad.Bayes.Inference.SMC2
-        , Control.Monad.Bayes.Examples.LinRegr
