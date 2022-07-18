@@ -34,6 +34,7 @@ benchmark prog = do
 
       duration_s : Double
       duration_s = (cast duration_ns) / (cast 1000000000)
+  print ("Duration: " ++ show duration_s)
   pure duration_s
 
 ||| Execute a program across a range of parameters and write row to file
@@ -45,13 +46,13 @@ benchRow :
   -- | List of run-times
   -> IO ()
 benchRow (prog_name, prog) (param_name, params) = do
+  print ("Running " ++ prog_name ++ " over " ++ param_name ++ " for values " ++ show params)
   -- Run program over varying parameter values and write.
   -- e.g. "LinRegr-MH100, 0.23, 0.87, 1.23, 1.78, 2.45"
   means <- sequence $ map (benchmark . prog) params
   writeRow fileName (prog_name, means)
 
-{- | Varying over dataset size
--}
+{- | Varying over dataset size -}
 fixed_mh_steps : Nat
 fixed_mh_steps = 2000
 fixed_smc_particles : Nat
@@ -88,8 +89,7 @@ bench_Topic = do
     benchRow ("Topic-SMC100", smcTopic fixed_smc_particles) row_header
     benchRow ("Topic-RMSMC10-1", rmsmcTopic fixed_rmsmc_particles fixed_mh_steps) row_header
 
-{- | Varying over inference parameters
--}
+{- | Varying over inference parameters -}
 fixed_lr_datasize : Nat
 fixed_lr_datasize = 50
 fixed_hmm_datasize : Nat
@@ -104,6 +104,7 @@ bench_MH = do
     benchRow ("LR50-MH", flip mhLinRegr fixed_lr_datasize) row_header
     benchRow ("HMM20-MH", flip mhHMM fixed_hmm_datasize) row_header
     benchRow ("Topic50-MH", flip mhTopic fixed_topic_datasize) row_header
+
 export
 bench_SMC : IO ()
 bench_SMC = do
