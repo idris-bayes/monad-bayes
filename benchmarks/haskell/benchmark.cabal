@@ -27,7 +27,7 @@ executable benchmark
     other-modules:    LinRegr,
                       HMM,
                       Topic,
-                      BenchmarkTests
+                      Benchmarks
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:

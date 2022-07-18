@@ -95,8 +95,8 @@ smcHMM n_particles n_nodes = do
   return ()
 
 -- | RMSMC
-rmsmcLinRegr :: Int -> Int -> Int -> IO ()
-rmsmcLinRegr n_particles n_mhsteps n_nodes = do
+rmsmcHMM :: Int -> Int -> Int -> IO ()
+rmsmcHMM n_particles n_mhsteps n_nodes = do
   dataset <- mkHMMData n_nodes
   let n_timesteps = n_particles
   sampleIO $ runPopulation $ rmsmc n_timesteps n_particles n_mhsteps

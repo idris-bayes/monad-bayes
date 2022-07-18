@@ -1,13 +1,19 @@
 module Main where
 
-import BenchmarkTests
+import Benchmarks
+    ( bench_LR,
+      bench_HMM,
+      bench_Topic,
+      bench_MH,
+      bench_SMC,
+      bench_RMSMC )
 import System.Environment (getArgs)
 
 main :: IO ()
 main = do
- benchDataSize
-
-benchDataSize = do
-  benchmarkLinRegrMH_DataSize
-  benchmarkHMMMH_DataSize
-  benchmarkTopicMH_DataSize
+  bench_LR
+  bench_HMM
+  bench_Topic
+  bench_MH
+  bench_SMC
+  bench_RMSMC
