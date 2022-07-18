@@ -14,31 +14,31 @@ import Statistics.Distribution.Normal
 import Numeric.Log
 
 ||| Params
-record LinRegrParams where
-  constructor MkLinRegrParams
+record Params where
+  constructor MkParams
   m : Double   -- mean
   c : Double      -- intercept
   s : Double      -- standard deviation
 
 ||| Prior
-linRegrPrior : MonadSample m => m LinRegrParams
+linRegrPrior : MonadSample m => m Params
 linRegrPrior = do
   m <- normal 0 3
   c <- normal 0 5
   s <- uniform 1 3
-  pure (MkLinRegrParams m c s)
+  pure (MkParams m c s)
 
 ||| Model
-linRegr : MonadInfer m => List (Double, Double) -> LinRegrParams -> m LinRegrParams
-linRegr xys (MkLinRegrParams m0 c0 s0) = do
+linRegr : MonadInfer m => List (Double, Double) -> Params -> m Params
+linRegr xys (MkParams m0 c0 s0) = do
   _ <- sequence (map (\(x, y_obs) => let logprob : Log Double = toLogDomain (gsl_normal_pdf (m0 * x + c0) s0 y_obs )
                                      in  score logprob) xys)
-  pure (MkLinRegrParams m0 c0 s0)
+  pure (MkParams m0 c0 s0)
 
 ||| Data
 mkLinRegrData : Nat -> IO (List (Double, Double))
 mkLinRegrData n_datapoints = sampleIO $ do
-  MkLinRegrParams m c s <- linRegrPrior
+  MkParams m c s <- linRegrPrior
   let xs = map cast [0 ..  n_datapoints]
   ys <- sequence (map (\x => normal (m * x + c) s) xs)
   pure (zip xs ys)

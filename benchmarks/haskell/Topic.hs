@@ -25,23 +25,23 @@ import Data.Vector (Vector, fromList, toList)
 import Data.List ( elemIndex )
 
 -- | Params
-data LDAParams = LDAParams {
+data Params = Params {
     θ :: [Double],   -- probabilities of each topic in a document
     φ :: [[Double]]  -- probabilities of each word in a topic in a document
    } deriving Show
 
 -- | Prior
-topicPrior :: (MonadSample m) => Int -> [String] -> m LDAParams
+topicPrior :: (MonadSample m) => Int -> [String] -> m Params
 topicPrior n_topics vocab = do
   -- Distribution over topics for a given document
   doc_topic_ps <- toList <$> dirichlet (fromList $ replicate n_topics 1)
   -- Generate distribution over words for each topic
   topic_word_ps <- replicateM n_topics (toList <$> dirichlet (fromList $ replicate (length vocab) 1))
-  return (LDAParams doc_topic_ps topic_word_ps)
+  return (Params doc_topic_ps topic_word_ps)
 
 -- | Model
-topicModel :: MonadInfer m => [String] -> [String] -> LDAParams -> m LDAParams
-topicModel vocab words (LDAParams doc_topic_ps topic_word_ps) = do
+topicModel :: MonadInfer m => [String] -> [String] -> Params -> m Params
+topicModel vocab words (Params doc_topic_ps topic_word_ps) = do
   let scoreWords [] = return words
       scoreWords (w:ws) = do
         topic_idx <- categorical (fromList doc_topic_ps)
@@ -50,7 +50,7 @@ topicModel vocab words (LDAParams doc_topic_ps topic_word_ps) = do
         score (Exp w_p)
         scoreWords ws
   scoreWords words
-  return (LDAParams doc_topic_ps topic_word_ps)
+  return (Params doc_topic_ps topic_word_ps)
 
 -- | Data
 fixed_vocab :: [String]
@@ -61,7 +61,7 @@ fixed_n_topics = 2
 
 mkTopicData :: Int -> IO [String]
 mkTopicData n_words = sampleIO $ do
-  (LDAParams doc_topic_ps topic_word_ps) <- topicPrior fixed_n_topics fixed_vocab
+  (Params doc_topic_ps topic_word_ps) <- topicPrior fixed_n_topics fixed_vocab
   let genWord = do
         topic_idx <- categorical (fromList doc_topic_ps)
         let word_ps = topic_word_ps !! topic_idx

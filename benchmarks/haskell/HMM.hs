@@ -76,7 +76,7 @@ mkHMMData n_nodes = sampleIO $ do
             y' <- binomial x' obs_p
             ys <- genData (i + 1) x'
             return (y':ys)
-  genData n_nodes fixed_init_state
+  genData 0 fixed_init_state
 
 -- | MH
 mhHMM :: Int -> Int -> IO ()

@@ -15,33 +15,30 @@ import qualified Statistics.Distribution.Binomial  as SB
 import Data.Vector (Vector, fromList, toList)
 
 -- | Params
-data LinRegrParams = LinRegrParams {
+data Params = Params {
     m :: Double
   , c :: Double
   , σ :: Double
 } deriving Show
 
-fromLinRegrParams :: LinRegrParams -> (Double, Double, Double)
-fromLinRegrParams (LinRegrParams m c σ) = (m, c, σ)
-
 -- | Prior
-linRegrPrior :: MonadSample m => m LinRegrParams
+linRegrPrior :: MonadSample m => m Params
 linRegrPrior = do
   m <- normal 0 3
   c <- normal 0 5
   σ <- uniform 1 3
-  return (LinRegrParams m c σ)
+  return (Params m c σ)
 
 -- | Model
-linRegr :: MonadInfer m => [(Double, Double)] -> LinRegrParams -> m LinRegrParams
-linRegr xys (LinRegrParams m c σ) = do
+linRegr :: MonadInfer m => [(Double, Double)] -> Params -> m Params
+linRegr xys (Params m c σ) = do
   mapM_ (\(x, y_obs) -> score (normalPdf (m * x + c) σ y_obs)) xys
-  return (LinRegrParams m c σ)
+  return (Params m c σ)
 
 -- | Data
 mkLinRegrData :: Int -> IO [(Double, Double)]
 mkLinRegrData n_datapoints = sampleIO $ do
-  LinRegrParams m c σ <- linRegrPrior
+  Params m c σ <- linRegrPrior
 
   let xs = [0 .. (fromIntegral n_datapoints)]
   ys <- mapM (\x -> normal (m * x + c) σ) xs
