@@ -20,14 +20,14 @@ record LinRegrParams where
   s : Double      -- standard deviation
 
 Show LinRegrParams where
-  show (MkLinRegrParams mv cv sv) = "(m : " ++ show mv ++ ", c : " ++ show cv ++ ", std : " ++ show sv ++ ")" 
+  show (MkLinRegrParams mv cv sv) = "(m : " ++ show mv ++ ", c : " ++ show cv ++ ", std : " ++ show sv ++ ")"
 
 mkLinRegrData : Nat -> List (Double, Double)
 mkLinRegrData n_datapoints = zip (map cast [0 ..  n_datapoints]) (map (*3) (map cast [0 ..  n_datapoints]))
 
 ||| A linear regression model for simulating given a set of model parameters
 linRegr_sim : MonadSample m => List Double -> LinRegrParams -> m (List Double)
-linRegr_sim  xs (MkLinRegrParams m0 c0 s0)   = do
+linRegr_sim xs (MkLinRegrParams m0 c0 s0)   = do
   foldlM (\ys, x => do y <- normal (m0 * x + c0) s0
                        pure (y::ys)) [] xs
 
@@ -87,7 +87,7 @@ rmsmcLinRegr n_mhsteps n_timesteps n_particles n_datapoints = do
 smc2LinRegr :   (n_timesteps : Nat) ->
                 (n_inner_particles : Nat) ->
                 (n_outer_particles : Nat) ->
-                (n_mhsteps : Nat) 
+                (n_mhsteps : Nat)
                 -> Nat -> IO (List (Log Double, (List (Log Double, LinRegrParams))))
 smc2LinRegr n_timesteps n_inner_particles  n_outer_particles n_mhsteps n_datapoints = do
   let xys = mkLinRegrData n_datapoints

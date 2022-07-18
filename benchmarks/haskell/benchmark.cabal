@@ -1,0 +1,42 @@
+cabal-version:      3.6
+name:               benchmark
+version:            0.1.0.0
+
+-- A short (one-line) description of the package.
+-- synopsis:
+
+-- A longer description of the package.
+-- description:
+
+-- A URL where users can report bugs.
+-- bug-reports:
+
+-- The license under which the package is released.
+-- license:
+author:             min-nguyen
+maintainer:         minhnguyen1995@googlemail.com
+
+-- A copyright notice.
+-- copyright:
+-- category:
+
+executable benchmark
+    main-is:          Main.hs
+
+    -- Modules included in this executable, other than Main.
+    other-modules:    LinRegr,
+                      HMM,
+                      LDA,
+                      BenchmarkTests
+
+    -- LANGUAGE extensions used by modules in this package.
+    -- other-extensions:
+    build-depends:      base >= 4.11 && < 4.17,
+                        criterion                     >= 1.5.13 && < 1.6,
+                        deepseq                       >= 1.4.4 && < 1.5,
+                        vector                        >= 0.12.3 && < 0.13,
+                        statistics                    >= 0.15.2 && < 0.16,
+                        log-domain                    >= 0.13.2 && < 0.14,
+                        monad-bayes
+    hs-source-dirs:   ./
+    default-language: Haskell2010
