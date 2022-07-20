@@ -85,7 +85,7 @@ mhTopic n_mhsteps n_words = do
   dataset <- mkTopicData n_words
   xs <- sampleIO $ prior $ mh n_mhsteps
            (topicPrior 2 fixed_vocab >>= topicModel {vocab_size_sub1 = 3} fixed_vocab dataset)
-  print xs
+  -- print xs
   pure ()
 
 ||| SMC
@@ -96,7 +96,7 @@ smcTopic n_particles n_words = do
   let n_timesteps = n_particles
   xs <- sampleIO $ runPopulation $ smc n_timesteps n_particles
             (topicPrior fixed_n_topics fixed_vocab >>= topicModel {vocab_size_sub1 = 3} fixed_vocab dataset)
-  print xs
+  -- print xs
   pure ()
 
 ||| RMSMC
@@ -107,5 +107,5 @@ rmsmcTopic n_particles n_mhsteps n_words = do
   let n_timesteps = n_particles
   xs <- sampleIO $ runPopulation $ rmsmc n_timesteps n_particles n_mhsteps
             (topicPrior fixed_n_topics fixed_vocab >>= topicModel {vocab_size_sub1 = 3}  fixed_vocab dataset)
-  print xs
+  -- print xs
   pure ()

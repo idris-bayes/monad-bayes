@@ -82,7 +82,7 @@ mhHMM n_mhsteps n_nodes = do
   dataset <- mkHMMData n_nodes
   xs       <- sampleIO $ prior $ mh n_mhsteps
                 (hmmPrior >>= hmm fixed_init_state dataset)
-  print xs
+  -- print xs
   pure ()
 
 ||| SMC
@@ -93,7 +93,7 @@ smcHMM n_particles n_nodes = do
   let n_timesteps = n_particles
   xs       <- sampleIO $ runPopulation $ smcSystematic n_timesteps n_particles
                 (hmmPrior >>= hmm fixed_init_state dataset)
-  print xs
+  -- print xs
   pure ()
 
 ||| RMSMC
@@ -104,5 +104,5 @@ rmsmcHMM n_particles n_mhsteps n_nodes = do
   let n_timesteps = n_particles
   xs       <- sampleIO $ runPopulation $ rmsmc n_timesteps n_particles n_mhsteps
                 (hmmPrior >>= hmm fixed_init_state dataset)
-  print xs
+  -- print xs
   pure ()
