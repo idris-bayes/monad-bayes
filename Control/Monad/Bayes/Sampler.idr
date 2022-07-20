@@ -17,7 +17,7 @@ public export
 sampleIO : SamplerIO a -> IO a
 sampleIO = id
 
-||| Like 'sampleIO' but with a custom pseudo-random number generator.
+||| Like 'sampleIO' but with a custom seed.
 public export
 sampleIOwith : SamplerIO a -> Bits64 -> IO a
 sampleIOwith m seed = srand seed >> m

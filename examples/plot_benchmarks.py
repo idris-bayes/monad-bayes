@@ -44,11 +44,12 @@ with open('haskell/benchmarks.csv') as hs_benchmarks, open('idris2/benchmarks.cs
   hs_groups  = groupBenchmarks(hs_benchmarks)
   idr_groups = groupBenchmarks(idr_benchmarks)
 
-  # page one
+  # benchmarks for varying over dataset size
   hs_vary_data  = hs_groups[0:3]
   idr_vary_data = idr_groups[0:3]
   plotPage(hs_vary_data, idr_vary_data)
 
+  # benchmarks for varying over inference parameters
   hs_vary_inf = hs_groups[3:6]
   idr_vary_inf = idr_groups[3:6]
   plotPage(hs_vary_inf, idr_vary_inf)

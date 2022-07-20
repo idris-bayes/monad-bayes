@@ -8,12 +8,10 @@ import Numeric.Log
 import Data.List
 import Debug.Trace
 
--- | pack --with-ipkg monad-bayes.ipkg repl Control/Monad/Bayes/Population.idr
-
 ||| List transformer
 public export
 record ListT (m : Type -> Type) (a : Type) where
-  constructor MkListT 
+  constructor MkListT
   runListT : m (List a)
 
 mapListT : (m (List a) -> n (List b)) -> ListT m a -> ListT n b
@@ -21,7 +19,7 @@ mapListT f m = MkListT $ f (runListT m)
 
 export
 Functor m => Functor (ListT m) where
-  map f  = mapListT $ map $ map f 
+  map f  = mapListT $ map $ map f
 
 export
 Applicative m => Applicative (ListT m) where
@@ -56,15 +54,15 @@ MonadInfer m => MonadInfer (ListT m) where
 public export
 record Population (m : Type -> Type) (a : Type) where
   constructor MkPopulation
-  runPopulation' : Weighted (ListT m) a 
+  runPopulation' : Weighted (ListT m) a
 
 export
 Functor m => Functor (Population m) where
-  map f (MkPopulation mx) = MkPopulation (map f mx) 
+  map f (MkPopulation mx) = MkPopulation (map f mx)
 
 export
 Monad m => Applicative (Population m) where
-  pure = MkPopulation . pure 
+  pure = MkPopulation . pure
   (MkPopulation mf) <*> (MkPopulation ma) = MkPopulation (mf <*> ma)
 
 export
@@ -111,27 +109,27 @@ hoist :
 hoist f = fromWeightedList . f . runPopulation
 
 ||| Increase the sample size by a given factor.
-||| The weights are adjusted such that their sum is preserved. It is therefore 
+||| The weights are adjusted such that their sum is preserved. It is therefore
 ||| safe to use 'spawn' in arbitrary places in the program without introducing bias.
 export
 spawn : (isMonad : Monad m) => Nat -> Population m ()
-spawn n = fromWeightedList $ pure $ replicate n (toLogDomain (1.0 / cast n), ()) 
+spawn n = fromWeightedList $ pure $ replicate n (toLogDomain (1.0 / cast n), ())
 
 export
 resampleGeneric :
-  MonadSample m => 
+  MonadSample m =>
   -- | resampler
   ({k : Nat} -> Vect k Double -> m (List (Fin k))) ->
   Population m a ->
   Population m a
 resampleGeneric resampler pop = fromWeightedList $ do
   particles <- runPopulation pop
-  let (log_ws, xs)  : (Vect (length particles) (Log Double), Vect (length particles) a) 
+  let (log_ws, xs)  : (Vect (length particles) (Log Double), Vect (length particles) a)
                     = unzip (fromList particles)
       z : Log Double = Numeric.Log.sum log_ws
-  if fromLogDomain z > 0 
+  if fromLogDomain z > 0
     then do
-            let weights    : Vect (length particles) Double   
+            let weights    : Vect (length particles) Double
                            = map (fromLogDomain . (/ z)) log_ws
             ancestors <- resampler weights
             let offsprings : List a
@@ -139,14 +137,14 @@ resampleGeneric resampler pop = fromWeightedList $ do
             pure $ map (z / (toLogDomain $ length particles), ) offsprings
     else
             pure particles
-            
+
 
 ||| Systematic sampler.
 export
 systematic : {n : Nat} -> Double -> Vect n Double -> List (Fin n)
 systematic {n = Z}   u Nil = Nil
 systematic {n = S k} u ws =
-  let     
+  let
           prob : Maybe (Fin (S k)) -> Double
           prob (Just idx) = index idx ws
           prob  Nothing   = index last ws
@@ -155,20 +153,17 @@ systematic {n = S k} u ws =
           inc = 1 / cast (S k)
 
           f : Nat -> Double -> Nat -> Double -> List Nat -> List Nat
-          f i v j q acc = 
+          f i v j q acc =
             if i == S k then acc else
             if v < q
               then f (S i) (v + inc) j    q                             ((minus j 1) :: acc)
               else f  i    v        (S j) (q + prob (natToFin j (S k))) acc
-          
+
           particle_idxs : List (Fin (S k))
-          particle_idxs = map (\nat => fromMaybe FZ (natToFin nat (S k))) 
+          particle_idxs = map (\nat => fromMaybe FZ (natToFin nat (S k)))
                               (f Z (u / cast (S k)) Z 0.0 [])
 
   in      particle_idxs
--- :exec print $ systematic 0.77 ([0.1, 0.25, 0.2, 0.05,0.15,0.05,0.1,0.05,0.05])
--- = [8, 6, 5, 4, 2, 2, 1, 1, 0]
-
 
 ||| Resample the population using the underlying monad and a systematic resampling scheme.
 ||| The total weight is preserved.
@@ -178,6 +173,52 @@ resampleSystematic :
   Population m a ->
   Population m a
 resampleSystematic = resampleGeneric (\ws => (`systematic` ws) <$> random)
+
+||| The conditional variance of stratified sampling is always smaller than that of multinomial
+||| sampling and it is also unbiased - see [Comparison of Resampling Schemes for Particle
+||| Filtering](https://arxiv.org/abs/cs/0507025).
+export
+stratified : MonadSample m => {n : Nat} -> Vect n Double -> m (List (Fin n))
+stratified {n = Z}   Nil     = pure Nil
+stratified {n = S k} weights = do
+  dithers <- sequence (Vect.replicate (S k) (uniform 0.0 1.0))
+
+  let vect_range : (n : Nat) -> Vect (S n) Nat
+      vect_range n = reverse (range_bwd n)
+        where range_bwd : (n : Nat) -> Vect (S n) Nat
+              range_bwd (S k) = (S k) :: range_bwd k
+              range_bwd Z     = Z :: Nil
+
+      positions : Vect (S k) Double
+      positions = map (/cast (S k)) $ zipWith (+) dithers (map cast (vect_range k))
+
+      cumulativeSum : Vect (S (S k)) Double
+      cumulativeSum = scanl (+) 0.0 weights
+
+      coalg : (Nat, Nat) -> Maybe (Maybe (Fin (S (S k))), (Nat, Nat))
+      coalg (i, j) with (natToFin i (S k), natToFin j (S (S k)))
+        _ | (Just i_fin, Just j_fin) with (index i_fin positions < index j_fin cumulativeSum)
+          _ | True  = Just (Just j_fin, (i + 1, j))
+          _ | False = Just (Nothing, (i, j + 1))
+        _ | otherwise = Nothing
+
+      fin_pred : Fin (S (S k)) -> Fin (S k)
+      fin_pred (FS k) = k
+      fin_pred FZ     = FZ
+
+      particle_idxs : List (Fin (S k))
+      particle_idxs = map (fin_pred) (catMaybes $ unfoldr coalg (0,0))
+
+  pure particle_idxs
+
+||| Resample the population using the underlying monad and a stratified resampling scheme.
+||| The total weight is preserved.
+export
+resampleStratified :
+  (MonadSample m) =>
+  Population m a ->
+  Population m a
+resampleStratified = resampleGeneric stratified
 
 ||| Multinomial sampler.  Sample from \(0, \ldots, n - 1\) \(n\)
 ||| times drawn at random according to the weights where \(n\) is the
@@ -210,9 +251,9 @@ extractEvidence pop = fromWeightedList $ do
   let z      : Log Double
              = Numeric.Log.sum log_ws
 
-  let normalized_log_ws : List (Log Double) 
+  let normalized_log_ws : List (Log Double)
              = map (if fromLogDomain z > 0
-                      then (/ z) 
+                      then (/ z)
                       else const (toLogDomain (1.0 / cast (length log_ws)))) log_ws
   score z
 
