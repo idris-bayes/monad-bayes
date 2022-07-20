@@ -25,6 +25,9 @@ record Params where
   transition_p : Double
   observation_p : Double
 
+Show Params where
+  show (MkParams trans_p obs_p) = "(trans_p : " ++ show trans_p ++ ", obs_p : " ++ show obs_p ++ ")"
+
 ||| Prior
 hmmPrior : MonadSample m => m Params
 hmmPrior = do
@@ -77,8 +80,9 @@ export
 mhHMM : Nat -> Nat -> IO ()
 mhHMM n_mhsteps n_nodes = do
   dataset <- mkHMMData n_nodes
-  _       <- sampleIO $ prior $ mh n_mhsteps
+  xs       <- sampleIO $ prior $ mh n_mhsteps
                 (hmmPrior >>= hmm fixed_init_state dataset)
+  -- print xs
   pure ()
 
 ||| SMC
@@ -87,8 +91,9 @@ smcHMM : Nat -> Nat -> IO ()
 smcHMM n_particles n_nodes = do
   dataset <- mkHMMData n_nodes
   let n_timesteps = n_particles
-  _       <- sampleIO $ runPopulation $ smcSystematic n_timesteps n_particles
+  xs       <- sampleIO $ runPopulation $ smcSystematic n_timesteps n_particles
                 (hmmPrior >>= hmm fixed_init_state dataset)
+  -- print xs
   pure ()
 
 ||| RMSMC
@@ -97,6 +102,7 @@ rmsmcHMM : Nat -> Nat -> Nat -> IO ()
 rmsmcHMM n_particles n_mhsteps n_nodes = do
   dataset <- mkHMMData n_nodes
   let n_timesteps = n_particles
-  _       <- sampleIO $ runPopulation $ rmsmc n_timesteps n_particles n_mhsteps
+  xs       <- sampleIO $ runPopulation $ rmsmc n_timesteps n_particles n_mhsteps
                 (hmmPrior >>= hmm fixed_init_state dataset)
+  -- print xs
   pure ()
