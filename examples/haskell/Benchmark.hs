@@ -51,7 +51,7 @@ fixed_mh_steps = 100
 fixed_smc_particles :: Int
 fixed_smc_particles = 100
 fixed_rmsmc_particles :: Int
-fixed_rmsmc_particles = 4
+fixed_rmsmc_particles = 8
 fixed_rmsmc_mh_steps :: Int
 fixed_rmsmc_mh_steps = 1
 
@@ -61,7 +61,7 @@ bench_LR = do
     writeRow fixed_fileName row_header
     benchRow ("LR-MH100", mhLinRegr fixed_mh_steps) row_header
     benchRow ("LR-SMC100", smcLinRegr fixed_smc_particles) row_header
-    benchRow ("LR-RMSMC4-1", rmsmcLinRegr fixed_rmsmc_particles fixed_mh_steps) row_header
+    benchRow ("LR-RMSMC8-1", rmsmcLinRegr fixed_rmsmc_particles fixed_mh_steps) row_header
 
 bench_HMM :: IO ()
 bench_HMM = do
@@ -69,7 +69,7 @@ bench_HMM = do
     writeRow fixed_fileName row_header
     benchRow ("HMM-MH100", mhHMM fixed_mh_steps) row_header
     benchRow ("HMM-SMC100", smcHMM fixed_smc_particles) row_header
-    benchRow ("HMM-RMSMC4-1", rmsmcHMM fixed_rmsmc_particles fixed_mh_steps) row_header
+    benchRow ("HMM-RMSMC8-1", rmsmcHMM fixed_rmsmc_particles fixed_mh_steps) row_header
 
 bench_Topic :: IO ()
 bench_Topic = do
@@ -77,7 +77,7 @@ bench_Topic = do
     writeRow fixed_fileName row_header
     benchRow ("Topic-MH100", mhTopic fixed_mh_steps) row_header
     benchRow ("Topic-SMC100", smcTopic fixed_smc_particles) row_header
-    benchRow ("Topic-RMSMC4-1", rmsmcTopic fixed_rmsmc_particles fixed_mh_steps) row_header
+    benchRow ("Topic-RMSMC8-1", rmsmcTopic fixed_rmsmc_particles fixed_mh_steps) row_header
 
 {- | Varying over inference parameters
 -}
@@ -108,9 +108,9 @@ bench_RMSMC :: IO ()
 bench_RMSMC = do
     let row_header = ("Number of rejuv steps", [20, 40, 60, 80, 100])
     writeRow fixed_fileName row_header
-    benchRow ("LR50-RMSMC4", \rejuv_steps -> rmsmcLinRegr fixed_rmsmc_particles rejuv_steps fixed_lr_datasize) row_header
-    benchRow ("HMM20-RMSMC4", \rejuv_steps -> rmsmcHMM fixed_rmsmc_particles rejuv_steps fixed_hmm_datasize) row_header
-    benchRow ("Topic50-RMSMC4", \rejuv_steps -> rmsmcTopic fixed_rmsmc_particles rejuv_steps fixed_topic_datasize) row_header
+    benchRow ("LR50-RMSMC8", \rejuv_steps -> rmsmcLinRegr fixed_rmsmc_particles rejuv_steps fixed_lr_datasize) row_header
+    benchRow ("HMM20-RMSMC8", \rejuv_steps -> rmsmcHMM fixed_rmsmc_particles rejuv_steps fixed_hmm_datasize) row_header
+    benchRow ("Topic50-RMSMC8", \rejuv_steps -> rmsmcTopic fixed_rmsmc_particles rejuv_steps fixed_topic_datasize) row_header
 
 runBenchmarks :: IO ()
 runBenchmarks = do
