@@ -24,7 +24,7 @@ fixed_fileName = "benchmarks.csv"
 ||| Write a line prepended with '\n' to a file,
 appendFileLn : String -> String -> IO ()
 appendFileLn file_name line = do
-  _ <- appendFile file_name ("\n" ++ line)
+  _ <- appendFile file_name (line ++ "\n")
   pure ()
 
 ||| Write a CSV row to a file, where 'label' is the first column and 'values' are the rest

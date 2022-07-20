@@ -20,7 +20,7 @@ fixed_fileName :: String
 fixed_fileName = "benchmarks.csv"
 
 appendFileLn :: String -> String -> IO ()
-appendFileLn file_name = appendFile file_name . ("\n" ++ )
+appendFileLn file_name = appendFile file_name . (++ "\n")
 
 writeRow :: Show a => String -> (String, [a]) -> IO ()
 writeRow file_name (label, values) = appendFileLn file_name (intercalate "," (label : map show values))
