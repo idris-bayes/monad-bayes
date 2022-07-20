@@ -21,6 +21,9 @@ record Params n_topics vocab_size where
   theta : Vect n_topics Double                    -- probabilities of each topic in a document
   phi   : Vect n_topics (Vect vocab_size Double)  -- probabilities of each word in a topic in a document
 
+Show (Params n m) where
+  show (MkParams theta phi) = "(doc_topic_ps : " ++ show theta ++ ", topic_word_ps : " ++ show phi ++ ")"
+
 fixed_vocab : Vect 4 String
 fixed_vocab = ["DNA", "evolution", "parsing", "phonology"]
 
@@ -80,8 +83,9 @@ export
 mhTopic : Nat -> Nat -> IO ()
 mhTopic n_mhsteps n_words = do
   dataset <- mkTopicData n_words
-  _ <- sampleIO $ prior $ mh n_mhsteps
+  xs <- sampleIO $ prior $ mh n_mhsteps
            (topicPrior 2 fixed_vocab >>= topicModel {vocab_size_sub1 = 3} fixed_vocab dataset)
+  print xs
   pure ()
 
 ||| SMC
@@ -90,8 +94,9 @@ smcTopic : Nat -> Nat -> IO ()
 smcTopic n_particles n_words = do
   dataset <- mkTopicData n_words
   let n_timesteps = n_particles
-  _ <- sampleIO $ runPopulation $ smc n_timesteps n_particles
+  xs <- sampleIO $ runPopulation $ smc n_timesteps n_particles
             (topicPrior fixed_n_topics fixed_vocab >>= topicModel {vocab_size_sub1 = 3} fixed_vocab dataset)
+  print xs
   pure ()
 
 ||| RMSMC
@@ -100,6 +105,7 @@ rmsmcTopic : Nat -> Nat -> Nat -> IO ()
 rmsmcTopic n_particles n_mhsteps n_words = do
   dataset <- mkTopicData n_words
   let n_timesteps = n_particles
-  _ <- sampleIO $ runPopulation $ rmsmc n_timesteps n_particles n_mhsteps
+  xs <- sampleIO $ runPopulation $ rmsmc n_timesteps n_particles n_mhsteps
             (topicPrior fixed_n_topics fixed_vocab >>= topicModel {vocab_size_sub1 = 3}  fixed_vocab dataset)
+  print xs
   pure ()

@@ -1,5 +1,15 @@
 module Benchmark
 
+import Control.Monad.Bayes.Interface
+import Control.Monad.Bayes.Sampler
+import Control.Monad.Bayes.Weighted
+import Control.Monad.Bayes.Traced.Static
+import Control.Monad.Bayes.Inference.SMC
+import Control.Monad.Bayes.Inference.PMMH
+import Control.Monad.Bayes.Inference.RMSMC
+import Control.Monad.Bayes.Inference.SMC2
+import Statistics.Distribution.Normal
+import Numeric.Log
 import System.File.ReadWrite
 import System.Clock
 import Data.List

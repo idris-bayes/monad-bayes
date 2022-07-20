@@ -54,7 +54,8 @@ mhLinRegr
   -> IO ()
 mhLinRegr n_mhsteps n_datapoints = do
   dataset <- mkLinRegrData n_datapoints
-  _       <- sampleIO $ prior $ mh n_mhsteps (linRegrPrior >>= linRegr dataset)
+  xs      <- sampleIO $ prior $ mh n_mhsteps (linRegrPrior >>= linRegr dataset)
+  print xs
   pure ()
 
 ||| SMC
@@ -66,7 +67,8 @@ smcLinRegr
 smcLinRegr n_particles n_datapoints = do
   dataset <- mkLinRegrData n_datapoints
   let n_timesteps = n_particles
-  _       <- sampleIO $ runPopulation $ smcSystematic n_timesteps n_particles (linRegrPrior >>= linRegr dataset)
+  xs       <- sampleIO $ runPopulation $ smcSystematic n_timesteps n_particles (linRegrPrior >>= linRegr dataset)
+  print xs
   pure ()
 
 ||| RMSMC
@@ -79,7 +81,8 @@ rmsmcLinRegr
 rmsmcLinRegr n_particles n_mhsteps  n_datapoints = do
   dataset <- mkLinRegrData n_datapoints
   let n_timesteps = n_particles
-  _       <- sampleIO $ runPopulation $ rmsmc n_timesteps n_particles n_mhsteps (linRegrPrior >>= linRegr dataset)
+  xs      <- sampleIO $ runPopulation $ rmsmc n_timesteps n_particles n_mhsteps (linRegrPrior >>= linRegr dataset)
+  print xs
   pure ()
 
 ||| PMMH
