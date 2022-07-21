@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# LANGUAGE RankNTypes #-}
 {-# HLINT ignore "Use camelCase" #-}
+{-# LANGUAGE LambdaCase #-}
 module Benchmark where
 
 import LinRegr
@@ -10,6 +11,7 @@ import Topic
 import Criterion.Main
 import Criterion.Types
 import Data.List
+import Data.List.Split
 import Statistics.Types
 import Control.DeepSeq
 import Criterion (benchmark')
@@ -92,54 +94,42 @@ bench_MH :: [Int] -> IO ()
 bench_MH args = do
     let row_header = ("Number of steps", args)
     writeRow fixed_fileName row_header
-    benchRow ("LR50-MH", flip mhLinRegr fixed_lr_datasize) row_header
-    benchRow ("HMM20-MH", flip mhHMM fixed_hmm_datasize) row_header
-    benchRow ("Topic50-MH", flip mhTopic fixed_topic_datasize) row_header
+    benchRow ("MH-LR50", flip mhLinRegr fixed_lr_datasize) row_header
+    benchRow ("MH-HMM20", flip mhHMM fixed_hmm_datasize) row_header
+    benchRow ("MH-Topic50", flip mhTopic fixed_topic_datasize) row_header
 
 bench_SMC ::  [Int] -> IO ()
 bench_SMC args = do
     let row_header = ("Number of particles", args)
     writeRow fixed_fileName row_header
-    benchRow ("LR50-SMC", flip smcLinRegr fixed_lr_datasize) row_header
-    benchRow ("HMM20-SMC", flip smcHMM fixed_hmm_datasize) row_header
-    benchRow ("Topic50-SMC", flip smcTopic fixed_topic_datasize) row_header
+    benchRow ("SMC-LR50", flip smcLinRegr fixed_lr_datasize) row_header
+    benchRow ("SMC-HMM20", flip smcHMM fixed_hmm_datasize) row_header
+    benchRow ("SMC-Topic50", flip smcTopic fixed_topic_datasize) row_header
 
 bench_RMSMC ::  [Int] -> IO ()
 bench_RMSMC args = do
     let row_header = ("Number of rejuv steps", args)
     writeRow fixed_fileName row_header
-    benchRow ("LR50-RMSMC10", \rejuv_steps -> rmsmcLinRegr fixed_rmsmc_particles rejuv_steps fixed_lr_datasize) row_header
-    benchRow ("HMM20-RMSMC10", \rejuv_steps -> rmsmcHMM fixed_rmsmc_particles rejuv_steps fixed_hmm_datasize) row_header
-    benchRow ("Topic50-RMSMC10", \rejuv_steps -> rmsmcTopic fixed_rmsmc_particles rejuv_steps fixed_topic_datasize) row_header
-
--- runBenchmarks :: IO ()
--- runBenchmarks = do
---   bench_LR
---   bench_HMM
---   bench_Topic
---   bench_MH
---   bench_SMC
---   bench_RMSMC
-
+    benchRow ("RMSMC10-LR50", \rejuv_steps -> rmsmcLinRegr fixed_rmsmc_particles rejuv_steps fixed_lr_datasize) row_header
+    benchRow ("RMSMC10-HMM20", \rejuv_steps -> rmsmcHMM fixed_rmsmc_particles rejuv_steps fixed_hmm_datasize) row_header
+    benchRow ("RMSMC10-Topic50", \rejuv_steps -> rmsmcTopic fixed_rmsmc_particles rejuv_steps fixed_topic_datasize) row_header
 
 runBenchmarks :: IO ()
 runBenchmarks = do
   -- | Read input benchmark parameters
-  content <- readFile "benchmark_params.txt"
-  let fixed_numParams = 5
-  -- | Group into 6 lists of 5 values
-  let chunksOf :: Int -> [a] -> [[a]]
-      chunksOf _ [] = []
-      chunksOf n xs = take n xs : chunksOf n (drop n xs)
+  content <- readFile "../benchmark_params.txt"
+  let removeComments :: [String] -> [String]
+      removeComments = filter (\case []     -> False
+                                     (x:xs) -> x /= '#')
   let args :: [[Int]]
-      args = chunksOf fixed_numParams (map read (lines content))
+      args = map (map read . splitOn ",") (removeComments (lines content))
   -- | Run benchmark programs on their corresponding parameters
   case args of
-        (lr : hmm : topic : mh : smc : rmsmc : []) -> do
+        [lr, hmm, topic, mh, smc, rmsmc] -> do
           bench_LR lr
           bench_HMM hmm
           bench_Topic topic
           bench_MH mh
           bench_SMC smc
           bench_RMSMC rmsmc
-        _   -> undefined
+        _   -> error "bad input file"

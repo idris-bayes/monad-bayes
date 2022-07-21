@@ -51,7 +51,7 @@ benchmarkOnce prog = do
 ||| Execute a program a certain amount of iterations and return the mean duration in seconds
 benchmark : String -> IO a -> IO Double
 benchmark comment prog = do
-  let iterations = 8
+  let iterations = 10
   times <- sequence (List.replicate iterations $ benchmarkOnce prog)
   let mean = (sum times) / (cast iterations)
   putStrLn "\{comment} (Duration: \{show mean}s)"
@@ -145,39 +145,31 @@ bench_RMSMC params = do
     benchRow ("RMSMC10-HMM20", \rejuv_steps => rmsmcHMM fixed_rmsmc_particles rejuv_steps fixed_hmm_datasize) row_header
     benchRow ("RMSMC10-Topic50", \rejuv_steps => rmsmcTopic fixed_rmsmc_particles rejuv_steps fixed_topic_datasize) row_header
 
-fixed_numParams : Nat
-fixed_numParams = 5
-
 runBenchmarks : IO ()
 runBenchmarks = do
   -- | Read input benchmark parameters
-  Right content <- readFile "benchmark_params.txt"
+  Right content <- readFile "../benchmark_params.txt"
     | _ => pure ()
-  -- | Group into 6 lists of 5 values
-  let chunksOf : Nat -> List a -> List (List a)
-      chunksOf _ [] = []
-      chunksOf n xs = (take n xs) :: (chunksOf n (drop n xs))
   let removeComments : List String -> List String
       removeComments = map pack . filter (\case []    => False
                                                 x::xs => not (x == '#')) . map unpack
-      args_strs : List (List1 Nat)
-      args_strs = (map (map (cast . pack) . splitOn ',' . unpack) $ removeComments $ lines content)
-  print args_strs
-  -- let args : List (List Nat)
-  --     args = let args_strs = lines content
-  --             chunksOf fixed_numParams (map cast (lines content))
+      args : List (List Nat)
+      args = map ( (\(x ::: xs) => x :: xs)
+                  . map (cast . pack)
+                  . splitOn ','
+                  . unpack)
+                (removeComments $ lines content)
+
   -- | Run benchmark programs on their corresponding parameters
-  -- ?undefined
-  pure ()
-  -- case args of
-  --       (lr :: hmm :: topic :: mh :: smc :: rmsmc :: []) => do
-  --         bench_LR lr
-  --         bench_HMM hmm
-  --         bench_Topic topic
-  --         bench_MH mh
-  --         bench_SMC smc
-  --         bench_RMSMC rmsmc
-  --       _   => assert_total (idris_crash "bad input file")
+  case args of
+        (lr :: hmm :: topic :: mh :: smc :: rmsmc :: []) => do
+          bench_LR lr
+          bench_HMM hmm
+          bench_Topic topic
+          bench_MH mh
+          bench_SMC smc
+          bench_RMSMC rmsmc
+        _   => assert_total (idris_crash "bad input file")
 
 {-
 pack --with-ipkg examples.ipkg repl Benchmark.idr
