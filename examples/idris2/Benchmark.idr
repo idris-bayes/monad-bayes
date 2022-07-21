@@ -13,6 +13,7 @@ import Numeric.Log
 import System.File.ReadWrite
 import System.Clock
 import Data.List
+import Data.List1
 import Data.String
 import LinRegr
 import HMM
@@ -78,7 +79,7 @@ fixed_mh_steps = 100
 fixed_smc_particles : Nat
 fixed_smc_particles = 100
 fixed_rmsmc_particles : Nat
-fixed_rmsmc_particles = 8
+fixed_rmsmc_particles = 10
 fixed_rmsmc_mh_steps : Nat
 fixed_rmsmc_mh_steps = 1
 
@@ -89,7 +90,7 @@ bench_LR params = do
     writeRow fixed_fileName row_header
     benchRow ("LR-MH100", mhLinRegr fixed_mh_steps) row_header
     benchRow ("LR-SMC100", smcLinRegr fixed_smc_particles) row_header
-    benchRow ("LR-RMSMC8-1", rmsmcLinRegr fixed_rmsmc_particles fixed_mh_steps) row_header
+    benchRow ("LR-RMSMC10-1", rmsmcLinRegr fixed_rmsmc_particles fixed_mh_steps) row_header
 
 export
 bench_HMM : List Nat -> IO ()
@@ -98,7 +99,7 @@ bench_HMM params = do
     writeRow fixed_fileName row_header
     benchRow ("HMM-MH100", mhHMM fixed_mh_steps) row_header
     benchRow ("HMM-SMC100", smcHMM fixed_smc_particles) row_header
-    benchRow ("HMM-RMSMC8-1", rmsmcHMM fixed_rmsmc_particles fixed_mh_steps) row_header
+    benchRow ("HMM-RMSMC10-1", rmsmcHMM fixed_rmsmc_particles fixed_mh_steps) row_header
 
 export
 bench_Topic : List Nat -> IO ()
@@ -107,7 +108,7 @@ bench_Topic params = do
     writeRow fixed_fileName row_header
     benchRow ("Topic-MH100", mhTopic fixed_mh_steps) row_header
     benchRow ("Topic-SMC100", smcTopic fixed_smc_particles) row_header
-    benchRow ("Topic-RMSMC8-1", rmsmcTopic fixed_rmsmc_particles fixed_mh_steps) row_header
+    benchRow ("Topic-RMSMC10-1", rmsmcTopic fixed_rmsmc_particles fixed_mh_steps) row_header
 
 {- | Varying over inference parameters -}
 fixed_lr_datasize : Nat
@@ -122,27 +123,27 @@ bench_MH : List Nat -> IO ()
 bench_MH params = do
     let row_header = ("Number of steps", params)
     writeRow fixed_fileName row_header
-    benchRow ("LR50-MH", flip mhLinRegr fixed_lr_datasize) row_header
-    benchRow ("HMM20-MH", flip mhHMM fixed_hmm_datasize) row_header
-    benchRow ("Topic50-MH", flip mhTopic fixed_topic_datasize) row_header
+    benchRow ("MH-LR50", flip mhLinRegr fixed_lr_datasize) row_header
+    benchRow ("MH-HMM20", flip mhHMM fixed_hmm_datasize) row_header
+    benchRow ("MH-Topic50", flip mhTopic fixed_topic_datasize) row_header
 
 export
 bench_SMC : List Nat -> IO ()
 bench_SMC params = do
     let row_header = ("Number of particles", params)
     writeRow fixed_fileName row_header
-    benchRow ("LR50-SMC", flip smcLinRegr fixed_lr_datasize) row_header
-    benchRow ("HMM20-SMC", flip smcHMM fixed_hmm_datasize) row_header
-    benchRow ("Topic50-SMC", flip smcTopic fixed_topic_datasize) row_header
+    benchRow ("SMC-LR50", flip smcLinRegr fixed_lr_datasize) row_header
+    benchRow ("SMC-HMM20", flip smcHMM fixed_hmm_datasize) row_header
+    benchRow ("SMC-Topic50", flip smcTopic fixed_topic_datasize) row_header
 
 export
 bench_RMSMC : List Nat -> IO ()
 bench_RMSMC params = do
     let row_header = ("Number of rejuv steps", params)
     writeRow fixed_fileName row_header
-    benchRow ("LR50-RMSMC8", \rejuv_steps => rmsmcLinRegr fixed_rmsmc_particles rejuv_steps fixed_lr_datasize) row_header
-    benchRow ("HMM20-RMSMC8", \rejuv_steps => rmsmcHMM fixed_rmsmc_particles rejuv_steps fixed_hmm_datasize) row_header
-    benchRow ("Topic50-RMSMC8", \rejuv_steps => rmsmcTopic fixed_rmsmc_particles rejuv_steps fixed_topic_datasize) row_header
+    benchRow ("RMSMC10-LR50", \rejuv_steps => rmsmcLinRegr fixed_rmsmc_particles rejuv_steps fixed_lr_datasize) row_header
+    benchRow ("RMSMC10-HMM20", \rejuv_steps => rmsmcHMM fixed_rmsmc_particles rejuv_steps fixed_hmm_datasize) row_header
+    benchRow ("RMSMC10-Topic50", \rejuv_steps => rmsmcTopic fixed_rmsmc_particles rejuv_steps fixed_topic_datasize) row_header
 
 fixed_numParams : Nat
 fixed_numParams = 5
@@ -156,18 +157,27 @@ runBenchmarks = do
   let chunksOf : Nat -> List a -> List (List a)
       chunksOf _ [] = []
       chunksOf n xs = (take n xs) :: (chunksOf n (drop n xs))
-  let args : List (List Nat)
-      args = chunksOf fixed_numParams (map cast (lines content))
+  let removeComments : List String -> List String
+      removeComments = map pack . filter (\case []    => False
+                                                x::xs => not (x == '#')) . map unpack
+      args_strs : List (List1 Nat)
+      args_strs = (map (map (cast . pack) . splitOn ',' . unpack) $ removeComments $ lines content)
+  print args_strs
+  -- let args : List (List Nat)
+  --     args = let args_strs = lines content
+  --             chunksOf fixed_numParams (map cast (lines content))
   -- | Run benchmark programs on their corresponding parameters
-  case args of
-        (lr :: hmm :: topic :: mh :: smc :: rmsmc :: []) => do
-          bench_LR lr
-          bench_HMM hmm
-          bench_Topic topic
-          bench_MH mh
-          bench_SMC smc
-          bench_RMSMC rmsmc
-        _   => assert_total (idris_crash "bad input file")
+  -- ?undefined
+  pure ()
+  -- case args of
+  --       (lr :: hmm :: topic :: mh :: smc :: rmsmc :: []) => do
+  --         bench_LR lr
+  --         bench_HMM hmm
+  --         bench_Topic topic
+  --         bench_MH mh
+  --         bench_SMC smc
+  --         bench_RMSMC rmsmc
+  --       _   => assert_total (idris_crash "bad input file")
 
 {-
 pack --with-ipkg examples.ipkg repl Benchmark.idr

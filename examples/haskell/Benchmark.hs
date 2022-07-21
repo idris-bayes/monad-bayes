@@ -51,33 +51,33 @@ fixed_mh_steps = 100
 fixed_smc_particles :: Int
 fixed_smc_particles = 100
 fixed_rmsmc_particles :: Int
-fixed_rmsmc_particles = 8
+fixed_rmsmc_particles = 10
 fixed_rmsmc_mh_steps :: Int
 fixed_rmsmc_mh_steps = 1
 
-bench_LR :: IO ()
-bench_LR = do
-    let row_header = ("Dataset size", [200, 400, 600, 800, 1000])
+bench_LR :: [Int] -> IO ()
+bench_LR args = do
+    let row_header = ("Dataset size", args)
     writeRow fixed_fileName row_header
     benchRow ("LR-MH100", mhLinRegr fixed_mh_steps) row_header
     benchRow ("LR-SMC100", smcLinRegr fixed_smc_particles) row_header
-    benchRow ("LR-RMSMC8-1", rmsmcLinRegr fixed_rmsmc_particles fixed_mh_steps) row_header
+    benchRow ("LR-RMSMC10-1", rmsmcLinRegr fixed_rmsmc_particles fixed_mh_steps) row_header
 
-bench_HMM :: IO ()
-bench_HMM = do
-    let row_header = ("Dataset size", [200, 400, 600, 800, 1000])
+bench_HMM :: [Int] -> IO ()
+bench_HMM args = do
+    let row_header = ("Dataset size", args)
     writeRow fixed_fileName row_header
     benchRow ("HMM-MH100", mhHMM fixed_mh_steps) row_header
     benchRow ("HMM-SMC100", smcHMM fixed_smc_particles) row_header
-    benchRow ("HMM-RMSMC8-1", rmsmcHMM fixed_rmsmc_particles fixed_mh_steps) row_header
+    benchRow ("HMM-RMSMC10-1", rmsmcHMM fixed_rmsmc_particles fixed_mh_steps) row_header
 
-bench_Topic :: IO ()
-bench_Topic = do
-    let row_header = ("Dataset size", [500, 1000, 1500, 2000, 2500])
+bench_Topic :: [Int] -> IO ()
+bench_Topic args = do
+    let row_header = ("Dataset size", args)
     writeRow fixed_fileName row_header
     benchRow ("Topic-MH100", mhTopic fixed_mh_steps) row_header
     benchRow ("Topic-SMC100", smcTopic fixed_smc_particles) row_header
-    benchRow ("Topic-RMSMC8-1", rmsmcTopic fixed_rmsmc_particles fixed_mh_steps) row_header
+    benchRow ("Topic-RMSMC10-1", rmsmcTopic fixed_rmsmc_particles fixed_mh_steps) row_header
 
 {- | Varying over inference parameters
 -}
@@ -88,35 +88,58 @@ fixed_hmm_datasize = 20
 fixed_topic_datasize :: Int
 fixed_topic_datasize = 50
 
-bench_MH :: IO ()
-bench_MH = do
-    let row_header = ("Number of steps", [200, 400, 600, 800, 1000])
+bench_MH :: [Int] -> IO ()
+bench_MH args = do
+    let row_header = ("Number of steps", args)
     writeRow fixed_fileName row_header
     benchRow ("LR50-MH", flip mhLinRegr fixed_lr_datasize) row_header
     benchRow ("HMM20-MH", flip mhHMM fixed_hmm_datasize) row_header
     benchRow ("Topic50-MH", flip mhTopic fixed_topic_datasize) row_header
 
-bench_SMC :: IO ()
-bench_SMC = do
-    let row_header = ("Number of particles", [200, 400, 600, 800, 1000])
+bench_SMC ::  [Int] -> IO ()
+bench_SMC args = do
+    let row_header = ("Number of particles", args)
     writeRow fixed_fileName row_header
     benchRow ("LR50-SMC", flip smcLinRegr fixed_lr_datasize) row_header
     benchRow ("HMM20-SMC", flip smcHMM fixed_hmm_datasize) row_header
     benchRow ("Topic50-SMC", flip smcTopic fixed_topic_datasize) row_header
 
-bench_RMSMC :: IO ()
-bench_RMSMC = do
-    let row_header = ("Number of rejuv steps", [20, 40, 60, 80, 100])
+bench_RMSMC ::  [Int] -> IO ()
+bench_RMSMC args = do
+    let row_header = ("Number of rejuv steps", args)
     writeRow fixed_fileName row_header
-    benchRow ("LR50-RMSMC8", \rejuv_steps -> rmsmcLinRegr fixed_rmsmc_particles rejuv_steps fixed_lr_datasize) row_header
-    benchRow ("HMM20-RMSMC8", \rejuv_steps -> rmsmcHMM fixed_rmsmc_particles rejuv_steps fixed_hmm_datasize) row_header
-    benchRow ("Topic50-RMSMC8", \rejuv_steps -> rmsmcTopic fixed_rmsmc_particles rejuv_steps fixed_topic_datasize) row_header
+    benchRow ("LR50-RMSMC10", \rejuv_steps -> rmsmcLinRegr fixed_rmsmc_particles rejuv_steps fixed_lr_datasize) row_header
+    benchRow ("HMM20-RMSMC10", \rejuv_steps -> rmsmcHMM fixed_rmsmc_particles rejuv_steps fixed_hmm_datasize) row_header
+    benchRow ("Topic50-RMSMC10", \rejuv_steps -> rmsmcTopic fixed_rmsmc_particles rejuv_steps fixed_topic_datasize) row_header
+
+-- runBenchmarks :: IO ()
+-- runBenchmarks = do
+--   bench_LR
+--   bench_HMM
+--   bench_Topic
+--   bench_MH
+--   bench_SMC
+--   bench_RMSMC
+
 
 runBenchmarks :: IO ()
 runBenchmarks = do
-  bench_LR
-  bench_HMM
-  bench_Topic
-  bench_MH
-  bench_SMC
-  bench_RMSMC
+  -- | Read input benchmark parameters
+  content <- readFile "benchmark_params.txt"
+  let fixed_numParams = 5
+  -- | Group into 6 lists of 5 values
+  let chunksOf :: Int -> [a] -> [[a]]
+      chunksOf _ [] = []
+      chunksOf n xs = take n xs : chunksOf n (drop n xs)
+  let args :: [[Int]]
+      args = chunksOf fixed_numParams (map read (lines content))
+  -- | Run benchmark programs on their corresponding parameters
+  case args of
+        (lr : hmm : topic : mh : smc : rmsmc : []) -> do
+          bench_LR lr
+          bench_HMM hmm
+          bench_Topic topic
+          bench_MH mh
+          bench_SMC smc
+          bench_RMSMC rmsmc
+        _   -> undefined
