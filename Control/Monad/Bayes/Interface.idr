@@ -49,10 +49,10 @@ interface Monad m => MonadSample m where
   categorical : {n : Nat} -> Vect n Double -> m (Fin n)
   categorical ps = do
     r <- random
-    let normalised_ps = map (/(sum ps)) ps 
+    let normalised_ps = map (/(sum ps)) ps
 
         cmf : Double -> Nat -> List Double -> Maybe (Fin n)
-        cmf acc idx (x :: xs) = let acc' = acc + x 
+        cmf acc idx (x :: xs) = let acc' = acc + x
                                 in  if acc' > r then natToFin idx n else cmf acc' (S idx) xs
         cmf acc idx []        = Nothing
 
@@ -100,6 +100,10 @@ interface Monad m => MonadSample m where
   geometric : (p : Double) -> m Nat
   geometric p = fromPMF (gsl_geometric_pdf p)
 
+  ||| Hypergeometric(num elements of "type 1", num elements of "type 2", num samples)
+  hypergeometric : (n1, n2, t : Nat) -> m Nat
+  hypergeometric n1 n2 t = fromPMF (gsl_hypergeometric_pdf n1 n2 t)
+
   ||| Poisson(λ)
   poisson : (p : Double) -> m Nat
   poisson p = fromPMF (gsl_poisson_pdf p)
@@ -107,7 +111,7 @@ interface Monad m => MonadSample m where
 public export
 interface Monad m => MonadCond m where
   ||| Record a likelihood. Note: when calling `score (Exp p)`, p must already be in the log-domain.
-  score : Log Double -> m ()  
+  score : Log Double -> m ()
 
 export
 condition : MonadCond m => Bool -> m ()
