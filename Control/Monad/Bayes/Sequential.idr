@@ -2,25 +2,25 @@ module Control.Monad.Bayes.Sequential
 
 import Control.Monad.Trans
 import Control.Monad.Bayes.Interface
- 
+
 ||| Represents a computation that can be suspended at certain points.
 -- The intermediate monadic effects can be extracted, which is particularly
 -- useful for implementation of Sequential Monte Carlo related methods.
 -- All the probabilistic effects are lifted from the transformed monad, but
 -- also `suspend` is inserted after each `score`.
 export
-data Sequential : (m : Type -> Type) -> (a : Type) -> Type where 
+data Sequential : (m : Type -> Type) -> (a : Type) -> Type where
   MkSeq : Inf (m (Either a (Sequential m a))) -> Sequential m a
 
 export
 runSeq : Sequential m a -> m (Either a (Sequential m a))
 runSeq (MkSeq m) = m
 
-mutual 
+mutual
   export
   Monad m => Functor (Sequential m) where
     map f (MkSeq mx) = MkSeq (do
-      x <- mx 
+      x <- mx
       case x of Left l  => pure (Left $ f l)
                 Right r => pure (Right $ map f r))
   export
@@ -31,12 +31,12 @@ mutual
       v' <- mv
       pure $ f' v'
 
-  export
+  export covering
   Monad m => Monad (Sequential m) where
     (>>=) (MkSeq mx) f = MkSeq $ do
       x <- mx
       case x of
-        Left l    => runSeq (f l) 
+        Left l    => runSeq (f l)
         Right seq => pure (Right ((assert_total (>>=)) seq  f))
 
   export
